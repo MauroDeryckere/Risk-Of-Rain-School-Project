@@ -1,0 +1,4 @@
+//Left, bottom, width, height, y Velocity Boost
+1271 752 21 58 600
+1399 912 21 58 600
+2487 288 21 58 800

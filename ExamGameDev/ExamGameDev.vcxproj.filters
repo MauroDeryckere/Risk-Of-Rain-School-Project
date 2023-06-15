@@ -1,0 +1,249 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="BaseEnemy.cpp">
+      <Filter>Enemies</Filter>
+    </ClCompile>
+    <ClCompile Include="ATGPowerUp.cpp">
+      <Filter>PowerUps</Filter>
+    </ClCompile>
+    <ClCompile Include="BasePowerUp.cpp">
+      <Filter>PowerUps</Filter>
+    </ClCompile>
+    <ClCompile Include="Chest.cpp">
+      <Filter>LevelObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="HealthBoostPowerUp.cpp">
+      <Filter>PowerUps</Filter>
+    </ClCompile>
+    <ClCompile Include="LaunchPad.cpp">
+      <Filter>LevelObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelObject.cpp">
+      <Filter>LevelObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Parent.cpp">
+      <Filter>Enemies</Filter>
+    </ClCompile>
+    <ClCompile Include="Game.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Hud.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerUpGenerator.cpp">
+      <Filter>PowerUps</Filter>
+    </ClCompile>
+    <ClCompile Include="MovementSpeedBoostPowerUp.cpp">
+      <Filter>PowerUps</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerUpInventory.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Teleporter.cpp">
+      <Filter>LevelObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Rope.cpp">
+      <Filter>LevelObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Level.cpp">
+      <Filter>Level</Filter>
+    </ClCompile>
+    <ClCompile Include="ATGMissile.cpp">
+      <Filter>PowerUps</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelObjectManager.cpp">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="EnemyManager.cpp">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="StopwatchManager.cpp">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>TimeObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Stopwatch.cpp">
+      <Filter>TimeObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelHitBullet.cpp">
+      <Filter>Level</Filter>
+    </ClCompile>
+    <ClCompile Include="TimeObjectManager.cpp">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundManager.cpp">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelManager.cpp">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Lemurian.cpp">
+      <Filter>Enemies</Filter>
+    </ClCompile>
+    <ClCompile Include="Suicider.cpp">
+      <Filter>Enemies</Filter>
+    </ClCompile>
+    <ClCompile Include="UI.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="EnemySpawner.cpp">
+      <Filter>Managers</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BaseEnemy.h">
+      <Filter>Enemies</Filter>
+    </ClInclude>
+    <ClInclude Include="ATGPowerUp.h">
+      <Filter>PowerUps</Filter>
+    </ClInclude>
+    <ClInclude Include="BasePowerUp.h">
+      <Filter>PowerUps</Filter>
+    </ClInclude>
+    <ClInclude Include="Chest.h">
+      <Filter>LevelObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="HealthBoostPowerUp.h">
+      <Filter>PowerUps</Filter>
+    </ClInclude>
+    <ClInclude Include="InputStructs.h">
+      <Filter>FileReading</Filter>
+    </ClInclude>
+    <ClInclude Include="LaunchPad.h">
+      <Filter>LevelObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelObject.h">
+      <Filter>LevelObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Parent.h">
+      <Filter>Enemies</Filter>
+    </ClInclude>
+    <ClInclude Include="Game.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Hud.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerUpGenerator.h">
+      <Filter>PowerUps</Filter>
+    </ClInclude>
+    <ClInclude Include="MovementSpeedBoostPowerUp.h">
+      <Filter>PowerUps</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerUpInventory.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="TextFileDataReader.h">
+      <Filter>FileReading</Filter>
+    </ClInclude>
+    <ClInclude Include="Teleporter.h">
+      <Filter>LevelObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Rope.h">
+      <Filter>LevelObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Level.h">
+      <Filter>Level</Filter>
+    </ClInclude>
+    <ClInclude Include="ATGMissile.h">
+      <Filter>PowerUps</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelObjectManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="EnemyManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="StopwatchManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>TimeObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Stopwatch.h">
+      <Filter>TimeObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelHitBullet.h">
+      <Filter>Level</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeObjectManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Lemurian.h">
+      <Filter>Enemies</Filter>
+    </ClInclude>
+    <ClInclude Include="Suicider.h">
+      <Filter>Enemies</Filter>
+    </ClInclude>
+    <ClInclude Include="UI.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="EnemySpawner.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Managers">
+      <UniqueIdentifier>{d035ad46-179b-400a-b964-0caf925cc1dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Enemies">
+      <UniqueIdentifier>{cfed1235-d06d-4575-9e11-95ede166e2e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LevelObjects">
+      <UniqueIdentifier>{12e4a16f-8238-4e85-8f95-49312333411f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FileReading">
+      <UniqueIdentifier>{e23420e7-c4bb-4621-ae0c-0ac719b0f858}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game">
+      <UniqueIdentifier>{ce3dbc9b-9c50-4aed-ab8d-98432fed0bbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Player">
+      <UniqueIdentifier>{0fa04458-2f29-4224-8086-739e4802a7bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level">
+      <UniqueIdentifier>{4d41a9ee-bf8e-4b3f-9e93-335641955c35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PowerUps">
+      <UniqueIdentifier>{15e5fbcb-bccf-411c-8bae-f0df0a641800}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TimeObjects">
+      <UniqueIdentifier>{c7dadb5a-86aa-44a6-85c1-b49ebefc2b00}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
