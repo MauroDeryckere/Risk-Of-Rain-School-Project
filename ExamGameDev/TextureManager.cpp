@@ -124,6 +124,12 @@ bool TextureManager::DrawNumber(NumberTextures numTextureArr, const Point2f& bot
 		return false;
 	}
 
+	if (number == 0)
+	{
+		numberWidth = m_pDigitAndSymbolTextures[int(numTextureArr)][int(Symbols::Zero)]->GetWidth();
+		return DrawSymbol(numTextureArr, bottomLeft, Symbols::Zero, digitSpace);
+	}
+
 	float previousDigitsWidth{};
 
 	size_t currentNumber{ number };

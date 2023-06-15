@@ -9,6 +9,7 @@
 #include "Timer.h"
 #include "utils.h"
 #include <vector>
+#include <iostream>
 
 #define digTexture TextureManager::NumberTextures::_20PxWhiteDigits
 
@@ -68,14 +69,14 @@ void Hud::DrawTime() const
 
 	if (minutes == 0)
 	{
-		m_pTextureManager->DrawSymbol(digTexture, bottomLeft, TextureManager::Symbols::Zero, 0.f, numWidth);
+		m_pTextureManager->DrawNumber(digTexture, bottomLeft, 0, 0.f, numWidth);
 		bottomLeft.x += numWidth;
-		m_pTextureManager->DrawSymbol(digTexture, bottomLeft, TextureManager::Symbols::Zero, 0.f, numWidth);
+		m_pTextureManager->DrawNumber(digTexture, bottomLeft, 0, 0.f, numWidth);
 		bottomLeft.x += numWidth;
 	}
 	else if (minutes < 10)
 	{
-		m_pTextureManager->DrawSymbol(digTexture, bottomLeft, TextureManager::Symbols::Zero, 0.f, numWidth);
+		m_pTextureManager->DrawNumber(digTexture, bottomLeft, 0, 0.f, numWidth);
 		bottomLeft.x += numWidth;
 		m_pTextureManager->DrawNumber(digTexture, bottomLeft, minutes, 0.f, numWidth);
 		bottomLeft.x += numWidth;
@@ -92,14 +93,14 @@ void Hud::DrawTime() const
 
 	if (fullTimeSeconds < 1.f)
 	{
-		m_pTextureManager->DrawSymbol(digTexture, bottomLeft, TextureManager::Symbols::Zero, 0.f, numWidth);
+		m_pTextureManager->DrawNumber(digTexture, bottomLeft, 0, 0.f, numWidth);
 		bottomLeft.x += numWidth;
-		m_pTextureManager->DrawSymbol(digTexture, bottomLeft, TextureManager::Symbols::Zero, 0.f, numWidth);
+		m_pTextureManager->DrawNumber(digTexture, bottomLeft, 0, 0.f, numWidth);
 		bottomLeft.x += numWidth;
 	}
 	else if (fullTimeSeconds < 10.f)
 	{
-		m_pTextureManager->DrawSymbol(digTexture, bottomLeft, TextureManager::Symbols::Zero, 0.f, numWidth);
+		m_pTextureManager->DrawNumber(digTexture, bottomLeft, 0, 0.f, numWidth);
 		bottomLeft.x += numWidth;
 		m_pTextureManager->DrawNumber(digTexture, bottomLeft, size_t(fullTimeSeconds), 0.f, numWidth);
 		bottomLeft.x += numWidth;

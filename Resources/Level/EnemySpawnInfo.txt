@@ -1,0 +1,2 @@
+//p0 p1 canParentSpawn canSuiciderSpawn 
+2 2 2 2 1 1

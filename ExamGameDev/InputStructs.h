@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include "EnemySpawner.h"
 
 struct RopeInput final
 {
@@ -55,6 +56,24 @@ struct EnemySpawnAreaInput final
 {
 	EnemySpawnAreaInput() = default;
 
+	friend std::istream& operator>>(std::istream& inputString, EnemySpawnAreaInput& enemySpawnData) //Need to overload the operator for each input struct
+	{
+		inputString >> enemySpawnData.rangePoint0.x
+					>> enemySpawnData.rangePoint0.y
+					>> enemySpawnData.rangePoint1.x
+					>> enemySpawnData.rangePoint1.y;
+
+		enemySpawnData.canSpawnEnemy.resize(AMOUNT_OF_ENEMY_TYPES);
+
+		for (size_t currEnemy {0}; currEnemy  < AMOUNT_OF_ENEMY_TYPES; ++currEnemy)
+		{
+			inputString >> enemySpawnData.canSpawnEnemy[currEnemy];
+		}
+
+		return inputString;
+	}
+
+	Point2f rangePoint0;
 	Point2f rangePoint1;
-	Point2f rangePoint2;
+	std::vector<size_t> canSpawnEnemy;
 };

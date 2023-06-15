@@ -132,7 +132,7 @@ bool UI::IsButtonPressed(AudioButton button, const Point2f& mousePos) const
 
 void UI::InitializeStartScreenTextures() //TODO: fix bottom pos to not be magic Number
 {
-	const std::string fontPath{ "8-BIT WONDER.TTF" };
+	const std::string fontPath{ "Font/8-BIT WONDER.TTF" };
 	const Color4f white{ 1.f,1.f,1.f,1.f };
 	constexpr int fontSize{ 12 };
 
@@ -179,7 +179,7 @@ void UI::InitializeMonsterLogScreenTextures()
 {
 	m_pMonsterLogScreen = m_pTextureManager->CreateTexture("Hud/MonsterLogScreen.png", "monsterLogScreen");
 
-	const std::string fontPath{ "8-BIT WONDER.TTF" };
+	const std::string fontPath{ "Font/8-BIT WONDER.TTF" };
 	const Color4f white{ 1.f,1.f,1.f,1.f };
 	constexpr int fontSize{ 12 };
 
@@ -245,7 +245,7 @@ const Rectf UI::InitializeDestRect(const Texture* pTexture, float bottomPos)
 
 void UI::InitializePausedTextures()
 {
-	const std::string fontPath{ "8-BIT WONDER.TTF" };
+	const std::string fontPath{ "Font/8-BIT WONDER.TTF" };
 	const Color4f white{ 1.f,1.f,1.f,1.f };
 	constexpr int fontSize{ 12 };
 
@@ -264,7 +264,7 @@ void UI::InitializePausedTextures()
 
 void UI::InitialializeAudioTextures()
 {
-	const std::string fontPath{ "8-BIT WONDER.TTF" };
+	const std::string fontPath{ "Font/8-BIT WONDER.TTF" };
 	const Color4f white{ 1.f,1.f,1.f,1.f };
 	constexpr int fontSize{ 12 };
 

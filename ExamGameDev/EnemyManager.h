@@ -38,7 +38,6 @@ class EnemyManager final
 		std::vector<BaseEnemy*> m_pEnemies;
 
 		//EnemySpawner
-		std::vector<bool> test;
 
 		void AddEnemy(BaseEnemy* pEnemy);
 
