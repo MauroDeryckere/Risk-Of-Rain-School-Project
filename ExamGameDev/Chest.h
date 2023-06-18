@@ -6,6 +6,7 @@ class BasePowerUp;
 class Level;
 class TextureManager;
 class TimeObjectManager;
+class PowerUpManager;
 class StopwatchManager;
 
 class Chest final:
@@ -20,7 +21,7 @@ class Chest final:
 			legendary = 4
 		};
 
-		explicit Chest(const Point2f& bottomLeft, Rarity rarity, Level* pLevel, TimeObjectManager* pTimeObjectManager, TextureManager* pTextureManager);
+		Chest(const Point2f& bottomLeft, Rarity rarity, PowerUpManager* pPowerUpManager, Level* pLevel, TimeObjectManager* pTimeObjectManager, TextureManager* pTextureManager);
 		virtual ~Chest() override;
 
 		Chest(const Chest&) = delete;
@@ -39,16 +40,29 @@ class Chest final:
 
 		BasePowerUp* m_pPowerUp;
 
+		//Not owned by Chest
 		TimeObjectManager* m_pTimeObjectManager;
+		TextureManager* m_pTextureManager;
+		//-------
+
 		StopwatchManager* m_pChestStopwatchManager;
 		Stopwatch* m_pDeSpawnStopwatch;
 
+		int m_CostPrice;
+
+		bool m_IsPlayerOverLapping;
+
+		float m_CurrAniTime;
+
 		void InitializeChestSize();
-		void GeneratePowerUp(TextureManager* pTextureManager);
+		void GeneratePowerUp(PowerUpManager* pPowerUpManager, TextureManager* pTextureManager);
+		void InitializeCostPrice();
 
 		const Rectf& ChangeSourceRect() const;
 
 		void Interact(Player* pPlayer);
 		void OpenChest(Player* pPlayer);
+
+		void DrawDroppedMoney() const;
 };
 

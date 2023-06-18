@@ -3,11 +3,12 @@ class TextureManager;
 class Texture;
 class BaseEnemy;
 class Level;
+class Player;
 
 class ATGMissile final
 {
 	public:
-		ATGMissile(const Point2f& spawnPosition, TextureManager* pTextureManager, BaseEnemy* pTarget, unsigned int damage);
+		ATGMissile(const Point2f& spawnPosition, TextureManager* pTextureManager, BaseEnemy* pTarget, size_t damage);
 		~ATGMissile();
 
 		ATGMissile(const ATGMissile&) = delete;
@@ -15,7 +16,7 @@ class ATGMissile final
 		ATGMissile(ATGMissile&&) = delete;
 		ATGMissile& operator=(ATGMissile&&) = delete;
 
-		void Update(Level* pLevel, float elapsedSec);
+		void Update(Player* pPlayer, Level* pLevel, float elapsedSec);
 		void Draw() const;
 
 	private:
@@ -23,7 +24,7 @@ class ATGMissile final
 		const Texture* m_pTexture;
 
 		Rectf m_Shape;
-		unsigned int m_Damage;
+		size_t m_Damage;
 
 		BaseEnemy* m_pTarget;
 

@@ -7,7 +7,7 @@ class SoundEffect;
 class SoundManager final
 {
 	public:
-		SoundManager() = default;
+		SoundManager();
 		~SoundManager();
 
 		SoundManager(const SoundManager&) = delete;
@@ -27,11 +27,17 @@ class SoundManager final
 		bool AdjustMusicSound();
 		bool AdjustGameSound();
 
+		size_t GetMusicVolumePercent() const;
+		size_t GetGameVolumePercent() const;
+
 	private:
 		/* map with pair of SoundEff or SoundStr ptr and amount of references to that sound at the moment
 			deletes sound when ref count = 0 or when manager object is destroyed
 		*/
-		std::map<std::string, std::pair<SoundStream*, unsigned int>> m_SoundStreamMap;
-		std::map<std::string, std::pair<SoundEffect*, unsigned int>> m_SoundEffectMap;
+		std::map<std::string, std::pair<SoundStream*, size_t>> m_SoundStreamMap;
+		std::map<std::string, std::pair<SoundEffect*, size_t>> m_SoundEffectMap;
+
+		size_t m_CurrentMusicVolPercent;
+		size_t m_CurrentGameVolPercent;
 };
 

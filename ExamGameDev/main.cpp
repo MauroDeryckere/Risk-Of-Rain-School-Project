@@ -12,7 +12,7 @@ int SDL_main(int argv, char** args)
 
 	StartHeapControl();
 
-	Game* pGame{ new Game{ Window{ "Risk of Rain - Game Dev Exam", 1280 , 720.f } } };
+	Game* pGame{ new Game{ Window{ "Deryckere Mauro Risk Of Rain", 1280.f , 720.f } } };
 	pGame->Run();
 	delete pGame;
 

@@ -5,7 +5,7 @@ class Rope final:
 	public LevelObject
 {
 	public:
-		explicit Rope(const Rectf& shape, TextureManager* pTextureManager);
+		Rope(const Rectf& shape, TextureManager* pTextureManager);
 		virtual ~Rope() override = default;
 
 		virtual void Update(float elapsedSec, Player* pPlayer, const Uint8* pInput ) override;

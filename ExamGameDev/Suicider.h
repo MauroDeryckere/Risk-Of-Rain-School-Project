@@ -1,6 +1,5 @@
 #pragma once
 #include "BaseEnemy.h"
-#include "Parent.h"
 
 class TimeObjectManager;
 class SoundManager;
@@ -16,7 +15,7 @@ class Suicider final :
     public BaseEnemy
 {
 	public:
-		Suicider(const Point2f& position, float movementSpeed, unsigned int health, unsigned int attackDamage, 
+		Suicider(const Point2f& position, float movementSpeed, size_t health, size_t attackDamage,
 				 TimeObjectManager* pTimeObjectManager, SoundManager* pSoundManager, TextureManager* pTextureManager);
 		virtual ~Suicider() override;
 
@@ -27,21 +26,21 @@ class Suicider final :
 
 		virtual void Update(float elapsedSec, Level* pLevel, Player* pPlayer) override;
 		virtual void Draw() const override;
-		virtual void TakeDamage(unsigned int attackDamage) override;
+		virtual void TakeDamage(Player* pPlayer, size_t attackDamage) override;
 
-		const Rectf ChangeSourceRect() const;
+		const Rectf& ChangeSourceRect() const;
 
 	private:
 		Stopwatch* m_pSpawnStopwatch; 
 
 		const Texture* m_pWalkTexture;
 		Stopwatch* m_pWalkStopwatch; 
-		unsigned int m_CurrentWalkFrame; 
-		const unsigned int m_WalkFrames;
+		size_t m_CurrentWalkFrame;
+		const size_t m_WalkFrames;
 
 		const Texture* m_pAttackTexture; 
-		unsigned int m_CurrentAttackFrame; 
-		const unsigned int m_AttackFrames;
+		size_t m_CurrentAttackFrame;
+		const size_t m_AttackFrames;
 
 		Stopwatch* m_pAttackStopwatch;
 
@@ -56,15 +55,16 @@ class Suicider final :
 		SuiciderState m_PreviousSuiciderState;
 
 		Stopwatch* m_pDeSpawnStopwatch; 
+		Stopwatch* m_pDieStopwatch;
 
 		SoundEffect* m_pAttackSound; 
 		SoundEffect* m_pHitSound; 
 
 		void DrawSuicider() const;
 
-		void ChangeEnemyState(Player* pPlayer);
-		void ChangeShape();
-		void HandleEnemyBehavior(Player* pPlayer, float elapsedSec);
+		void UpdateEnemyState(Player* pPlayer);
+		void UpdateShape();
+		void UpdateEnemyBehavior(Player* pPlayer, float elapsedSec);
 		void Attack(Player* pPlayer);
 		void HandleMovement(float elapsedSec);
 		void UpdateAnimationFrame();

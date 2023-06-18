@@ -1,11 +1,11 @@
 #pragma once
-#include <vector>
-#include <map>
 class  BasePowerUp;
 class  Player;
 class  Level;
 class  TextureManager;
 class  Texture;
+
+#include <vector>
 
 class PowerUpInventory final
 {
@@ -24,7 +24,10 @@ class PowerUpInventory final
 		void ActivatePowerUps(Player* pPlayer, Level* plevel) const;
 
 	private:
+		//Not owned by powwerUpInventory
 		TextureManager* m_pTextureManager;
+		//----------
+
 		std::vector<BasePowerUp*> m_pPowerUps;
 };
 

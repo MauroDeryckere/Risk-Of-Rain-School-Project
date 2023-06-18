@@ -13,7 +13,7 @@
 #include "Stopwatch.h"
 #include "Rope.h"
 #include "SoundEffect.h"
-#include "SoundStream.h"
+#include "Game.h"
 
 #define digTexture TextureManager::NumberTextures::_20PxWhiteDigits
 
@@ -24,7 +24,7 @@ Player::Player(const Point2f& playerPosition, TextureManager* pTextureManager, S
 	m_pPlayerStopwatchManager{ m_pTimeObjectManager->CreateStopwatchManager() },
 
 	m_Shape{ Rectf {playerPosition.x, playerPosition.y, 16.f, 24.f} },
-	m_pTexture{ m_pTextureManager->CreateTexture("Character/CharacterSpriteSheetFull.png", "player") },
+	m_pTexture{ m_pTextureManager->CreateTexture("Player/CharacterSpriteSheetFull.png", "player") },
 	m_IsFacingLeft{ false },
 
 	m_HorSpeed{ 100.f },
@@ -33,15 +33,20 @@ Player::Player(const Point2f& playerPosition, TextureManager* pTextureManager, S
 	m_Velocity{ 0.f,0.f },
 	m_Acceleration{ 0.f,-981.f },
 
+	m_LastPosOnGround{ playerPosition.x, playerPosition.y },
+	m_LastPosOnRope{ -1.f, -1.f },
+	m_IsOnGround{false},
+
 	m_MaxHealth{ 100 },
 	m_CurrentHealth{ m_MaxHealth },
-	m_AttackRange{ 100 },
-	m_AttackDamage{ 25 },
+	m_AttackRange{ 125 },
+	m_AttackDamage{ 15 },
 
 	m_IsInvulnerable{ false },
 	m_CanFireATG{ false },
 
 	m_pInventory{ new PowerUpInventory{ pTextureManager, 20 } },
+	m_Balance{25},
 
 	m_JumpCounter{ 0 },
 	m_MaxJumps{ 1 },
@@ -65,28 +70,47 @@ Player::Player(const Point2f& playerPosition, TextureManager* pTextureManager, S
 	m_FulllMetalJacketFrames{5},
 
 	m_CurrentDeathFrame{ 0 },
-	m_DeathFrames{ 5 }
+	m_DeathFrames{ 5 },
+
+	m_WonGame{false},
+
+	m_pHudTexture{m_pTextureManager->CreateTexture("HUD/HUD.png", "HUDAbs")},
+	m_WasClimbing{false}
 {
 	InitializeStopwatches();
-	InitializeSounds();
+	InitializeSoundEffects();
 }
 
 Player::~Player()
 {
 	delete m_pInventory;
+
 	m_pTextureManager->DeleteTexture("player");
+	m_pTextureManager->DeleteTexture("HUDAbs");
+
 	DeleteStopwatches();
-	DeleteSounds();
+	DeleteSoundEffects();
 }
 
-void Player::Update(float elapsedSec, Level* pLevel, const Uint8* pInput)
+void Player::Update(float elapsedSec, Level* pLevel, Game* pGame, const Uint8* pInput)
 {
-	m_PreviousPlayerState = m_PlayerState;
+	//Reset to spawnPos
+	if (pInput[SDL_SCANCODE_P])
+	{
+		const Point2f& spawnPos{ pLevel->GetSpawnPosition() };
 
+		m_Shape.bottom = spawnPos.y;
+		m_Shape.left = spawnPos.x;
+	}
+
+	m_PreviousPlayerState = m_PlayerState;
+	m_IsOnGround = pLevel->IsOnGround(m_Shape);
+
+	HandleFallDamage();
 	HandleHealthRegen();
 
-	ChangePlayerState(pLevel, pInput);
-		ChangeCharacterShape();
+	UpdatePlayerState(pLevel, pInput);
+		ChangePlayerShape();
 
 	HandleMovementKeyboardInput(pInput);
 	HandleMovement(elapsedSec);
@@ -94,10 +118,10 @@ void Player::Update(float elapsedSec, Level* pLevel, const Uint8* pInput)
 
 	if (m_PlayerState != PlayerState::climbing)
 	{
-		pLevel->HandleCollision(m_Shape, m_Velocity);
+		pLevel->HandleCollision(m_Shape, m_Velocity, nullptr, this, m_LastPosOnGround);
 	}
 
-	HandleStopwatches(elapsedSec);
+	HandleStopwatches(pGame, elapsedSec);
 
 	m_pInventory->ActivatePowerUps(this, pLevel);
 	m_CanFireATG = false;
@@ -113,28 +137,35 @@ void Player::DrawInventory(float windowWidth, float windowHeight) const
 	m_pInventory->Draw(windowWidth, windowHeight);
 }
 
-void Player::DrawHealth(float windowWidth, float windowHeight) const
+void Player::DrawPlayerStatsHud(float windowWidth, float windowHeight) const
 {
-	const float healthBarWidth{ windowWidth/6.4f };
-	const float healthBarHeight{ windowHeight/72 };
-	
-	constexpr float offset{ 1.f };
+	const float hudTextureScale{ windowHeight / 720.f };
+	const Rectf hudTextureDstrect{ windowWidth / 2 - (m_pHudTexture->GetWidth() * hudTextureScale) / 2,
+								(windowHeight / 720.f) * 20.f,
+								m_pHudTexture->GetWidth() * hudTextureScale,
+								m_pHudTexture->GetHeight() * hudTextureScale };
 
-	const float healthBarLeft{windowWidth/2 - healthBarWidth /2};
-	const float healthBarBottom{ 40.f };
+	DrawAbilities(windowWidth, windowHeight, hudTextureScale, hudTextureDstrect);
+	DrawHealth(windowWidth, windowHeight, hudTextureScale, hudTextureDstrect);
+
+	m_pHudTexture->Draw(hudTextureDstrect);
+}
+
+void Player::DrawHealth(float windowWidth, float windowHeight, float hudTextureScale, const Rectf& hudTextureDstrect) const
+{
+	const float left{ 10.f * hudTextureScale };
+	const float bottom{ 20.f };
+	const Rectf barRect{ hudTextureDstrect.left + left, hudTextureDstrect.bottom + bottom, 320.f * hudTextureScale, 14.f * hudTextureScale };
 
 	float numWidth{};
 	float symbolWidth{};
 
-	Point2f bottomLeft{ healthBarLeft - offset, healthBarBottom };
+	Point2f bottomLeft{ barRect.left + barRect.width /2 - 40.f * (windowHeight/720.f) , barRect.bottom - 3.f * (windowHeight / 720.f) };
 
-	//Background
 	utils::SetColor(Color4f{ 0.f, 0.f, 0.f, .5f });
-	utils::FillRect(healthBarLeft - offset, healthBarBottom, healthBarWidth + 2 * offset, healthBarHeight);
-
-	//Health
+	utils::FillRect(barRect);
 	utils::SetColor(Color4f{ 0.f, 1.f, 0.f, 1.f });
-	utils::FillRect(healthBarLeft, healthBarBottom, healthBarWidth * m_CurrentHealth/m_MaxHealth, healthBarHeight);
+	utils::FillRect(Rectf{barRect.left, barRect.bottom, barRect.width * m_CurrentHealth/m_MaxHealth , barRect.height});
 
 	m_pTextureManager->DrawNumber(digTexture, bottomLeft, m_CurrentHealth, 0.f, numWidth);
 	bottomLeft.x += numWidth;
@@ -145,37 +176,37 @@ void Player::DrawHealth(float windowWidth, float windowHeight) const
 	#undef digTexture
 }
 
-void Player::DrawAbilities(float windowWidth, float windowHeight) const
+void Player::DrawAbilities(float windowWidth, float windowHeight, float hudTextureScale, const Rectf& hudTextureDstrect) const
 {
 	constexpr float scale{ 2.f };
-	constexpr float abWidth{ 18.f };
-	constexpr float abHeight{ 18.f };
+
+	constexpr float abSrcWidth{ 18.f };
+	constexpr float abSrcHeight{ 18.f };
+
+	const float spaceBetwAb{ 10.f * hudTextureScale };
+
+	constexpr float abSpritesheetOffset{ 4.f };
+	
+	const Color4f usingOverlay{ 0.f,0.f,0.f,.25f };
+	const Color4f cooldownOverLay{ 0.f,0.f,0.f,.5f };
 
 	constexpr size_t amountOfAbilities{ 4 };
 
-	constexpr float spaceBetwAb{ 10.f };
-
-	const Rectf doesntExistSourceRect{ 4.f + (5) * abWidth + 4.f * (5),
-										514.f,
-										abWidth ,
-										abHeight };
-
 	for (size_t index{ 0 }; index < amountOfAbilities; ++index)
 	{
-		constexpr float spritesheetOffset{ 4.f };
+		const float dstSize{ 36.f * hudTextureScale };
+		const float left{  78.f  * hudTextureScale };
+		const float bottom{ hudTextureDstrect.bottom + 56 * hudTextureScale };
 
-		const Rectf destRect{ spritesheetOffset + index * (scale * abWidth) + spaceBetwAb * index,
-							  0.f,
-							  scale * abWidth,
-							  scale * abHeight };
+		const Rectf destRect{ hudTextureDstrect.left + left + spaceBetwAb * index + dstSize * index,
+							  bottom,
+							  dstSize, 
+							  dstSize };
 
-		const Rectf sourceRect{ spritesheetOffset + index * abWidth + spritesheetOffset * index,
+		const Rectf sourceRect{ abSpritesheetOffset + index * abSrcWidth + abSpritesheetOffset * index,
 								514.f,
-								abWidth ,
-								abHeight };
-
-		const Color4f usingOverlay{ 0.f,0.f,0.f,.25f };
-		const Color4f cooldownOverLay{ 0.f,0.f,0.f,.5f };
+								abSrcWidth ,
+								abSrcHeight };
 
 		switch (index)
 		{
@@ -192,7 +223,7 @@ void Player::DrawAbilities(float windowWidth, float windowHeight) const
 				const Rectf cooldownOverlayRect{ destRect.left,
 												 destRect.bottom,
 												 destRect.width,
-												(1.f - m_pDoubleTapCooldownStopwatch->GetCurrSec() / m_pDoubleTapCooldownStopwatch->GetMaxSec()) * destRect.height };
+												 (1 - m_pDoubleTapCooldownStopwatch->GetCurrSec() / m_pDoubleTapCooldownStopwatch->GetMaxSec()) * destRect.height };
 			
 				utils::SetColor(cooldownOverLay);
 				utils::FillRect(cooldownOverlayRect);
@@ -211,7 +242,7 @@ void Player::DrawAbilities(float windowWidth, float windowHeight) const
 				const Rectf cooldownOverlayRect{ destRect.left,
 												 destRect.bottom,
 												 destRect.width,
-												(1.f - m_FullMetalJacketCooldownStopwatch->GetCurrSec() / m_FullMetalJacketCooldownStopwatch->GetMaxSec()) * destRect.height };
+											 	 (1 - m_FullMetalJacketCooldownStopwatch->GetCurrSec() / m_FullMetalJacketCooldownStopwatch->GetMaxSec()) * destRect.height };
 			
 				utils::SetColor(cooldownOverLay);
 				utils::FillRect(cooldownOverlayRect);
@@ -230,13 +261,17 @@ void Player::DrawAbilities(float windowWidth, float windowHeight) const
 				const Rectf cooldownOverlayRect{ destRect.left, 
 												 destRect.bottom, 
 												 destRect.width, 
-												(1.f - m_pRollCooldownStopwatch->GetCurrSec()/ m_pRollCooldownStopwatch->GetMaxSec()) * destRect.height };
+												 (1 - m_pRollCooldownStopwatch->GetCurrSec()/ m_pRollCooldownStopwatch->GetMaxSec()) * destRect.height };
 				
 				utils::SetColor(cooldownOverLay);
 				utils::FillRect(cooldownOverlayRect);
 			}
 			break;
 		case 3:
+			const Rectf doesntExistSourceRect{ abSpritesheetOffset + (5) * abSrcWidth + (5) * abSpritesheetOffset,
+												514.f,
+												abSrcWidth ,
+												abSrcHeight };
 			m_pTexture->Draw(destRect, doesntExistSourceRect);
 			break;
 		}
@@ -246,6 +281,16 @@ void Player::DrawAbilities(float windowWidth, float windowHeight) const
 const Rectf& Player::GetShape() const
 {
 	return m_Shape;
+}
+
+size_t Player::GetBalance() const
+{
+	return m_Balance;
+}
+
+void Player::UpdateBalance(int balChange)
+{
+	m_Balance += balChange;
 }
 
 bool Player::CanFireATG() const
@@ -270,20 +315,52 @@ void Player::StopClimbing()
 	}
 }
 
-void Player::UseLaunchPad(const Vector2f& velocity)
+bool Player::IsClimbing() const
+{
+	if (m_PlayerState == PlayerState::climbing)
+	{
+		return true;
+	}
+	
+	return false;
+}
+
+void Player::UseLaunchPad(const Point2f& bottomCenter, const Vector2f& velocity)
 {
 	m_Velocity.y = velocity.y;
 	m_PlayerState = PlayerState::jumping;
+
+	//Set last pos on ground to bottom launchPad so that you don't take any fall damage when using launchpads
+	m_LastPosOnGround = bottomCenter;
 }
 
-void Player::TakeDamage(unsigned int attackDamage)
+bool Player::IsOnGround() const
+{
+	return m_IsOnGround;
+}
+
+void Player::TakeDamage(int attackDamage)
 {
 	if (m_PlayerState == PlayerState::dying || m_IsInvulnerable)
 	{
 		return;
 	}
 
-	m_CurrentHealth = std::max(int(m_CurrentHealth - attackDamage), 0);
+	if (attackDamage == -1)
+	{
+		if (m_CurrentHealth == 1)
+		{
+			m_CurrentHealth = 0;
+		}
+		else
+		{
+			m_CurrentHealth = 1;
+		}
+	}
+	else
+	{
+		m_CurrentHealth = std::max(int(m_CurrentHealth - attackDamage), 0);
+	}
 
 	m_pNoDamageTakenStopwatch->Reset();
 	m_pNoDamageTakenStopwatch->Start();
@@ -297,7 +374,7 @@ void Player::CollectPowerUp(BasePowerUp* pPowerUp)
 	m_pCollectPowerUp->Play(0);
 }
 
-void Player::IncreaseMaxHealth(unsigned int healthBoost)
+void Player::IncreaseMaxHealth(size_t healthBoost)
 {
 	m_MaxHealth += healthBoost;
 	//std::cout << "Max Health: " << m_MaxHealth << "\n";
@@ -316,8 +393,8 @@ void Player::InitializeStopwatches()
 	m_pRollStopwatch = m_pPlayerStopwatchManager->CreateStopwatch(m_HorSpeed / 750);
 	m_pRollCooldownStopwatch = m_pPlayerStopwatchManager->CreateStopwatch( 3.f );
 
-	m_pDoubleTapStopwatch = m_pPlayerStopwatchManager->CreateStopwatch(.2f);
-	m_pDoubleTapCooldownStopwatch = m_pPlayerStopwatchManager->CreateStopwatch(.5f );
+	m_pDoubleTapStopwatch = m_pPlayerStopwatchManager->CreateStopwatch(.1f);
+	m_pDoubleTapCooldownStopwatch = m_pPlayerStopwatchManager->CreateStopwatch(.3f );
 
 	m_FullMetalJacketStopwatch = m_pPlayerStopwatchManager->CreateStopwatch(.1f);
 	m_FullMetalJacketCooldownStopwatch = m_pPlayerStopwatchManager->CreateStopwatch(4.f);
@@ -335,16 +412,44 @@ void Player::DeleteStopwatches()
 	m_pTimeObjectManager->DeleteStopwatchManager(m_pPlayerStopwatchManager);
 }
 
-void Player::InitializeSounds()
+void Player::InitializeSoundEffects()
 {
 	m_pAttackBulletSound = m_pSoundManager->CreateSoundEffect("playerBullet", "Sounds/SoundEffects/wBullet1.ogg");
 	m_pCollectPowerUp = m_pSoundManager->CreateSoundEffect("useSound", "Sounds/SoundEffects/wPickup.ogg");
 }
 
-void Player::DeleteSounds()
+void Player::DeleteSoundEffects()
 {
 	m_pSoundManager->DeleteSoundEffect("playerBullet");
 	m_pSoundManager->DeleteSoundEffect("useSound");
+}
+
+void Player::HandleFallDamage()
+{
+	const Point2f currenCharPos{ m_Shape.left, m_Shape.bottom };
+	
+
+	if (m_PlayerState == PlayerState::climbing)
+	{
+		m_LastPosOnRope = currenCharPos;
+		m_WasClimbing = true;
+	}
+
+	constexpr float startTakingFallDamageHeight{ 125.f };
+
+	if (m_IsOnGround)
+	{
+		const float fallenHeight{ (!m_WasClimbing ? m_LastPosOnGround.y - currenCharPos.y
+												: m_LastPosOnRope.y - currenCharPos.y) };
+
+		if (fallenHeight >= startTakingFallDamageHeight)
+		{
+			TakeDamage(int((fallenHeight * -m_Acceleration.y) / 10000));
+		}
+
+		m_LastPosOnGround = currenCharPos;
+		m_WasClimbing = false;
+	}
 }
 
 void Player::HandleHealthRegen()
@@ -355,22 +460,21 @@ void Player::HandleHealthRegen()
 	}
 	if (m_pHealthRegenStopwatch->IsTimeReached() )
 	{
-		constexpr unsigned int healthRegen{1};
+		constexpr size_t healthRegen{1};
 		m_CurrentHealth = std::min(m_CurrentHealth + healthRegen, m_MaxHealth);
 	}
 }
 
-void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
+void Player::UpdatePlayerState(const Level* pLevel, const Uint8* pInput)
 {
 	if (m_CurrentHealth == 0 || m_PlayerState == PlayerState::dying)
 	{
+		m_WonGame = false;
 		m_PlayerState = PlayerState::dying;
 		return;
 	}
 
-	const bool isOnGround{ pLevel->IsOnGround(m_Shape) };
-
-	const bool isJumpInput{ pInput[SDL_SCANCODE_SPACE] && true };
+	const bool isJumpInput{ bool(pInput[SDL_SCANCODE_SPACE]) };
 
 	const bool isWalkInput{ pInput[SDL_SCANCODE_LEFT] ||
 							pInput[SDL_SCANCODE_RIGHT] };
@@ -387,15 +491,15 @@ void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
 	switch (m_PlayerState)
 	{
 	case PlayerState::idle:
-		if (isOnGround)
+		if (m_IsOnGround)
 		{
-			if (isJumpInput)
-			{
-				m_PlayerState = PlayerState::jumping;
-			}
-			else if (isWalkInput && m_Velocity.x != 0.f)
+			if (isWalkInput && m_Velocity.x != 0.f)
 			{
 				m_PlayerState = PlayerState::walking;
+			}
+			else if (isJumpInput)
+			{
+				m_PlayerState = PlayerState::jumping;
 			}
 			else if (isRollInput)
 			{
@@ -420,7 +524,7 @@ void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
 		}
 		break;
 	case PlayerState::walking:
-		if (isOnGround)
+		if (m_IsOnGround)
 		{
 			if ((!isWalkInput && !isJumpInput) || m_Velocity.x == 0.f)
 			{
@@ -453,7 +557,7 @@ void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
 		}
 		break;
 	case PlayerState::jumping:
-		if (isOnGround)
+		if (m_IsOnGround)
 		{
 			if (isWalkInput)
 			{
@@ -482,6 +586,14 @@ void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
 			{
 				m_PlayerState = PlayerState::doubleTap;
 			}
+			else if (isFullMetalJacketInput)
+			{
+				m_PlayerState = PlayerState::fullMetalJacket;
+			}
+			else if (isRollInput)
+			{
+				m_PlayerState = PlayerState::rolling;
+			}
 			else
 			{
 			 m_PlayerState = PlayerState::jumping;
@@ -489,6 +601,7 @@ void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
 		}
 		break;
 	case PlayerState::climbing:
+		//Can only enter jumping after climbing, can't attack right away
 		if (isJumpInput && !isClimbInput && !pLevel->IsIntersectingMapOnRope(m_Shape))
 		{
 			m_PlayerState = PlayerState::jumping;
@@ -501,7 +614,7 @@ void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
 		}
 		else
 		{
-			if (isOnGround)
+			if (m_IsOnGround)
 			{
 				if (isJumpInput)
 				{
@@ -537,29 +650,7 @@ void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
 		}
 		else
 		{
-			if (isOnGround)
-			{
-				if (isJumpInput)
-				{
-					m_PlayerState = PlayerState::jumping;
-				}
-				else if (isWalkInput && m_Velocity.x != 0.f)
-				{
-					m_PlayerState = PlayerState::walking;
-				}
-				else if (isRollInput)
-				{
-					m_PlayerState = PlayerState::rolling;
-				}
-				else
-				{
-					m_PlayerState = PlayerState::idle;
-				}
-			}
-			else
-			{
-				m_PlayerState = PlayerState::jumping;
-			}
+			UpdatePlayerStateAfterAttackAbility(isJumpInput, isWalkInput, isRollInput);
 		}
 		break;
 	case PlayerState::fullMetalJacket:
@@ -569,31 +660,37 @@ void Player::ChangePlayerState(const Level* pLevel, const Uint8* pInput)
 		}
 		else
 		{
-			if (isOnGround)
-			{
-				if (isJumpInput)
-				{
-					m_PlayerState = PlayerState::jumping;
-				}
-				else if (isWalkInput && m_Velocity.x != 0.f)
-				{
-					m_PlayerState = PlayerState::walking;
-				}
-				else if (isRollInput)
-				{
-					m_PlayerState = PlayerState::rolling;
-				}
-				else
-				{
-					m_PlayerState = PlayerState::idle;
-				}
-			}
-			else
-			{
-				m_PlayerState = PlayerState::jumping;
-			}
+			UpdatePlayerStateAfterAttackAbility(isJumpInput, isWalkInput, isRollInput);
 		}
 		break;
+	}
+}
+
+void Player::UpdatePlayerStateAfterAttackAbility(bool isJumpInput, bool isWalkInput, bool isRollInput)
+{
+	//Can not attack right away after an attack
+	if (m_IsOnGround)
+	{
+		if (isJumpInput)
+		{
+			m_PlayerState = PlayerState::jumping;
+		}
+		else if (isWalkInput && m_Velocity.x != 0.f)
+		{
+			m_PlayerState = PlayerState::walking;
+		}
+		else if (isRollInput)
+		{
+			m_PlayerState = PlayerState::rolling;
+		}
+		else
+		{
+			m_PlayerState = PlayerState::idle;
+		}
+	}
+	else
+	{
+		m_PlayerState = PlayerState::jumping;
 	}
 }
 
@@ -637,7 +734,9 @@ void Player::HandleMovementKeyboardInput(const Uint8* pInput)
 		}
 	}
 
-	if (m_PlayerState == PlayerState::jumping && m_JumpCounter < m_MaxJumps && m_Velocity.y >= 0.f)
+	if (m_PlayerState == PlayerState::jumping 
+		&& m_JumpCounter < m_MaxJumps 
+		&& m_Velocity.y >= 0.f)
 	{
 		if (pInput[SDL_SCANCODE_SPACE])
 		{
@@ -685,28 +784,34 @@ void Player::HandleAttackStates(Level* pLevel)
 	switch (m_PlayerState)
 	{
 	case PlayerState::doubleTap:
-		if (m_PreviousPlayerState != PlayerState::doubleTap)
+		if (m_CurrentDoubleTapFrame == 0 && m_pDoubleTapStopwatch->IsTimeReached())
 		{
-			m_CanFireATG = pLevel->HandleBulletRayCast(m_Shape, m_IsFacingLeft, m_AttackRange, m_AttackDamage);
+			m_CanFireATG = pLevel->HandleBulletRayCast(this, m_Shape, m_IsFacingLeft, m_AttackRange, m_AttackDamage);
+
+		}
+		else if (m_CurrentDoubleTapFrame == 2 && m_pDoubleTapStopwatch->IsTimeReached())
+		{
+			m_CanFireATG = pLevel->HandleBulletRayCast(this, m_Shape, m_IsFacingLeft, m_AttackRange * 0.8f, m_AttackDamage);
+
 		}
 		break;
-	case PlayerState::fullMetalJacket: //TODO: knockback
+	case PlayerState::fullMetalJacket:
 		if (m_PreviousPlayerState != PlayerState::fullMetalJacket)
 		{
-			m_CanFireATG = pLevel->HandleBulletRayCast(m_Shape, m_IsFacingLeft, m_AttackRange, m_AttackDamage, 5);
+			m_CanFireATG = pLevel->HandleBulletRayCast(this, m_Shape, m_IsFacingLeft, m_AttackRange * 1.5f, m_AttackDamage*2, 5);
 		}
 		break;
 	}
 }
 
-void Player::HandleStopwatches(const float elapsedSec)
+void Player::HandleStopwatches(Game* pGame, float elapsedSec)
 {
-	StartStopwatches();
+	StartStopwatches(pGame);
 	ResetAnimationStopwatches();
 	ResetCooldownStopwatches(elapsedSec);
 }
 
-void Player::StartStopwatches()
+void Player::StartStopwatches(Game* pGame)
 {
 	switch (m_PlayerState)
 	{
@@ -735,6 +840,7 @@ void Player::StartStopwatches()
 
 	case Player::PlayerState::rolling:
 		m_pRollStopwatch->Start();
+		m_IsInvulnerable = true;
 
 		if (m_pRollStopwatch->IsTimeReached())
 		{
@@ -746,9 +852,9 @@ void Player::StartStopwatches()
 				m_pRollStopwatch->Reset();
 
 				m_CurrentRollFrame = 0;
+				m_IsInvulnerable = false;
 			}
 		}
-
 		break;
 
 	case Player::PlayerState::doubleTap:
@@ -807,7 +913,7 @@ void Player::StartStopwatches()
 			{
 				m_pDyingStopwatch->Reset();
 
-				std::cout << "dead \n";
+				pGame->EndGame(m_WonGame);
 			}
 			else
 			{
@@ -857,7 +963,7 @@ void Player::ResetAnimationStopwatches()
 	}
 }
 
-void Player::ChangeCharacterShape()
+void Player::ChangePlayerShape()
 {
 	constexpr float scale{ 2.f };
 
@@ -882,7 +988,7 @@ void Player::ChangeCharacterShape()
 
 }
 
-const Rectf Player::ChangeCharacterSourceRect() const
+const Rectf& Player::ChangePlayerSourceRect() const
 {
 	Rectf sourceRect{};
 
@@ -953,7 +1059,7 @@ const Rectf Player::ChangeCharacterSourceRect() const
 
 void Player::DrawPlayer() const
 {
-	const Rectf sourceRect{ ChangeCharacterSourceRect() };
+	const Rectf& sourceRect{ ChangePlayerSourceRect() };
 
 	if (m_IsFacingLeft)
 	{

@@ -29,15 +29,17 @@ class BasePowerUp
 		virtual void Activate(Player* pPlayer, Level* pLevel) = 0;
 
 		const Rectf& GetShape() const;
+		//Index of lookuptable
 		size_t GetIndex() const;
 
+		//Set bottomLeft position (for inventory drawing)
 		void SetBottomLeft(const Point2f& bottomLeft);
 
 		virtual void IncreasePowerUpAmount();
-		const unsigned int GetPowerUpAmount() const;
+		const size_t GetPowerUpAmount() const;
 
 	protected: 
-		unsigned int m_Amount;
+		size_t m_Amount;
 		
 	private:
 		const PowerUps m_PowerUp;

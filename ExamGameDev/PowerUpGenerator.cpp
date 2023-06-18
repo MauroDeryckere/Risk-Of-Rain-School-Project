@@ -8,24 +8,25 @@
 #include "MovementSpeedBoostPowerUp.h"
 
 #include "ATGPowerUp.h"
+#include "Texture.h"
+#include "utils.h"
 
 #include <cassert>
 #include <iostream>
 
-BasePowerUp* PowerUpGenerator::GeneratePowerUp(Chest::Rarity chestRarity, const Point2f& position, TextureManager* pTextureManager)
+BasePowerUp* PowerUpGenerator::GeneratePowerUp(Chest::Rarity chestRarity, const Rectf& shape, TextureManager* pTextureManager)
 {
     assert(chestRarity != Chest::Rarity::money);
 
     BasePowerUp* pPowerUp{nullptr};
 
-	constexpr float commonSpawnChance{ 100 };
-    constexpr float rareSpawnChance{ 20 };
+	constexpr size_t commonSpawnChance{ 100 };
+    constexpr size_t rareSpawnChance{ 20 };
 
-    constexpr unsigned int max{ 100 };
-    constexpr unsigned int min{ 1 };
+    constexpr size_t min{ 1 };
+    constexpr size_t max{ 100 };
 
-    const unsigned int randomNumber = rand() % (max - min + 1) + min;
-
+    const size_t randomNumber{ size_t(utils::GetRandomNumber(min, max)) };
 
     switch (chestRarity)
     {
@@ -33,11 +34,11 @@ BasePowerUp* PowerUpGenerator::GeneratePowerUp(Chest::Rarity chestRarity, const 
 
         if (randomNumber <= rareSpawnChance)
         {
-            pPowerUp = GenerateRarePowerUp(position, pTextureManager);
+            pPowerUp = GenerateRarePowerUp(shape, pTextureManager);
         }
         else if (randomNumber <= commonSpawnChance)
         {
-            pPowerUp = GenerateCommonPowerUp(position, pTextureManager);
+            pPowerUp = GenerateCommonPowerUp(shape, pTextureManager);
         }
         else
         {
@@ -46,26 +47,28 @@ BasePowerUp* PowerUpGenerator::GeneratePowerUp(Chest::Rarity chestRarity, const 
         break;
 
     case Chest::Rarity::rare:
-        pPowerUp = GenerateRarePowerUp(position, pTextureManager);
+        pPowerUp = GenerateRarePowerUp(shape, pTextureManager);
         break;
 
     case Chest::Rarity::legendary:
-        pPowerUp = GenerateLegendaryPowerUp(position, pTextureManager);
+        pPowerUp = GenerateLegendaryPowerUp(shape, pTextureManager);
         break;
     }
 
     return pPowerUp;
 }
 
-BasePowerUp* PowerUpGenerator::GenerateCommonPowerUp(const Point2f& position, TextureManager* pTextureManager)
+BasePowerUp* PowerUpGenerator::GenerateCommonPowerUp(const Rectf& shape, TextureManager* pTextureManager)
 {
     BasePowerUp* pPowerUp{ nullptr };
     const Texture* pCommonPowerUpTexture{ pTextureManager->CreateTexture("PowerUps/CommonPowerUps.png", "commonPowerUp")};
 
-    constexpr unsigned int max{ 2 };
-    constexpr unsigned int min{ 1 };
+    constexpr size_t min{ 1 };
+    constexpr size_t max{ 2 };
 
-    const unsigned int randomNumber = rand() % (max - min + 1) + min;
+    const size_t randomNumber{ size_t(utils::GetRandomNumber(min, max)) };
+
+    const Point2f position{ shape.left + shape.width/2 - 68.f / 2,  shape.bottom};
 
     switch (randomNumber)
     {
@@ -80,15 +83,17 @@ BasePowerUp* PowerUpGenerator::GenerateCommonPowerUp(const Point2f& position, Te
     return pPowerUp;
 }
 
-BasePowerUp* PowerUpGenerator::GenerateRarePowerUp(const Point2f& position, TextureManager* pTextureManager)
+BasePowerUp* PowerUpGenerator::GenerateRarePowerUp(const Rectf& shape, TextureManager* pTextureManager)
 {
     BasePowerUp* pPowerUp{ nullptr };
     const Texture* pRarePowerUpTexture{ pTextureManager->CreateTexture("PowerUps/RarePowerUps.png", "rarePowerUp")};
 
-    constexpr unsigned int max{ 1 };
-    constexpr unsigned int min{ 1 };
+    const Point2f position{ shape.left + shape.width / 2 - 68.f / 2,  shape.bottom};
 
-    const unsigned int randomNumber = rand() % (max - min + 1) + min;
+    constexpr size_t min{ 1 };
+    constexpr size_t max{ 1 };
+
+    const size_t randomNumber{ size_t(utils::GetRandomNumber(min, max)) };
 
     switch (randomNumber)
     {
@@ -100,20 +105,22 @@ BasePowerUp* PowerUpGenerator::GenerateRarePowerUp(const Point2f& position, Text
     return pPowerUp;
 }
 
-BasePowerUp* PowerUpGenerator::GenerateLegendaryPowerUp(const Point2f& position, TextureManager* pTextureManager)
+BasePowerUp* PowerUpGenerator::GenerateLegendaryPowerUp(const Rectf& shape, TextureManager* pTextureManager)
 {
     BasePowerUp* pPowerUp{ nullptr };
-    const Texture* pRarePowerUpTexture{ pTextureManager->CreateTexture("PowerUps/RarePowerUps.png", "legendaryPowerUps") }; //Change to legandary in future
+    const Texture* pRarePowerUpTexture{ pTextureManager->CreateTexture("PowerUps/RarePowerUps.png", "legendaryPowerUps") };
 
-    constexpr unsigned int max{ 1 };
-    constexpr unsigned int min{ 1 };
+    const Point2f position{ shape.left + shape.width / 2 - 68.f / 2,  shape.bottom };
 
-    const unsigned int randomNumber = rand() % (max - min + 1) + min;
+    constexpr size_t min{ 1 };
+    constexpr size_t max{ 1 };
+
+    const size_t randomNumber{ size_t(utils::GetRandomNumber(min, max)) };
 
     switch (randomNumber)
     {
     case 1:
-        pPowerUp = new ATGPowerUp{ position, pRarePowerUpTexture }; //Temp, legendary powerUps here in future
+        pPowerUp = new ATGPowerUp{ position, pRarePowerUpTexture }; 
         break;
     }
 

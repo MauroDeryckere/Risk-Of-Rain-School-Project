@@ -16,6 +16,7 @@ class TextureManager;
 class TimeObjectManager;
 class SoundManager;
 
+class PowerUpManager;
 class LevelManager;
 
 class Game : public BaseGame
@@ -31,6 +32,8 @@ public:
 
 	void Update( float elapsedSec ) override;
 	void Draw( ) const override;
+
+	void EndGame(bool wonGame);
 
 	// Event handling
 	void ProcessKeyDownEvent( const SDL_KeyboardEvent& e ) override;
@@ -51,31 +54,37 @@ private:
 
 	GameState m_GameState;
 	GameState m_PreviousGameState;
+
+	bool m_WonGame;
+	
 	Point2f m_MousePos;
-
-	// FUNCTIONS
-	void Initialize();
-	void Cleanup( );
-	void ClearBackground( ) const;
-
-	void PrintInputKeys() const;
 
 	//Managers
 	TextureManager* m_pTextureManager;
 	SoundManager* m_pSoundManager;
 	TimeObjectManager* m_pTimeObjectManager;
 
+	PowerUpManager* m_pPowerUpManager;
 	LevelManager* m_pLevelManager;
 
 	//Member variables
 	Timer* m_pGameTimer;
 	SoundStream* m_pTitleScreenMusic;
 
-	Level* m_pCurrentLevel;
 	Player* m_pPlayer;
 	Camera* m_pCamera;
 	Hud* m_pHud;
 	UI* m_pUI;
+
+
+	// FUNCTIONS
+	void Initialize();
+	void Cleanup();
+	void ClearBackground() const;
+
+	void PrintInputKeys() const;
+
+	void DrawGameplay() const;
 
 	//For Game State Machine
 	void HandleStartScreenState(const Point2f& mousePos);
@@ -83,4 +92,7 @@ private:
 	void HandlePausedState(const Point2f& mousePos);
 	void HandleAudioState(const Point2f& mousePos);
 	void HandleEndScreenState(const Point2f& mousePos);
+
+	void InitializeAtStage1();
+	void ResetGameToMainMenu();
 };

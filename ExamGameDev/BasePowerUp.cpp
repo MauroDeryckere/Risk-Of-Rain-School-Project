@@ -45,7 +45,7 @@ void BasePowerUp::IncreasePowerUpAmount()
 	++m_Amount;
 }
 
-const unsigned int BasePowerUp::GetPowerUpAmount() const
+const size_t BasePowerUp::GetPowerUpAmount() const
 {
 	return m_Amount;
 }

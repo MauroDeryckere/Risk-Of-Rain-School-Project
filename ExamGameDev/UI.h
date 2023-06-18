@@ -39,7 +39,8 @@ class UI final
 		};
 		enum class EndScreenButton
 		{
-
+			BackToMainMenu = 0,
+			Quit = 1
 		};
 
 		UI(float windowWidth, float windowHeight, SoundManager* pSoundManager, TextureManager* pTextureManager);
@@ -56,18 +57,21 @@ class UI final
 		void DrawMonsterLogScreen() const;
 		void DrawPausedScreen() const;
 		void DrawAudioScreen() const;
-		void DrawEndScreen() const;
+		void DrawEndScreen(bool wonGame) const;
 
 		bool IsButtonPressed(StartScreenButton button, const Point2f& mousePos) const;
 		bool IsButtonPressed(MonsterLogButton button, const Point2f& mousePos) const;
 		bool IsButtonPressed(PausedButton button, const Point2f& mousePos) const;
 		bool IsButtonPressed(AudioButton button, const Point2f& mousePos) const;
+		bool IsButtonPressed(EndScreenButton button, const Point2f& mousePos) const;
 
 		void InitializeStartScreenTextures();
 		void InitializeMonsterLogScreenTextures();
+		void InitializeEndScreenTextures();
 
 		bool FreeStartScreenResources();
 		bool FreeMonsterLogResources();
+		bool FreeEndScreenResources();
 
 	private:
 		//Not owned by UI
@@ -90,6 +94,10 @@ class UI final
 
 		std::vector<std::pair<const Texture*, Rectf>> m_pAudioTxtTextures;
 
+		std::vector<std::pair<const Texture*, Rectf>> m_pEndScreenTxtTextures;
+		const Texture* m_pVictoryTxt;
+		const Texture* m_pGameOverTxt;
+
 		SoundEffect* m_pButtonHitSound;
 
 		void InitializeTextures();
@@ -98,7 +106,6 @@ class UI final
 		void InitializePausedTextures();
 		void InitialializeAudioTextures();
 
-		void DrawStartScreenButton(const Texture* pTexture, const Rectf& dstRect) const;
-		void DrawStartScreenButton(const std::pair<const Texture*, Rectf>& buttonPair) const;
+		void DrawScreenButton(std::pair<const Texture*, Rectf>& buttonPair, const Color4f& bgColor = Color4f{0.117f, 0.109f, 0.160f, 1.f}, const Rectf& boxSize = Rectf{}, float boxPadding = 5.f) const;
 };
 

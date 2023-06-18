@@ -15,8 +15,9 @@ class HealthBoostPowerUp final:
 
 		virtual void Activate(Player* pPlayer, Level* pLevel) override;
 		virtual void IncreasePowerUpAmount() override;
+
 	private:
-		const unsigned int m_HealthBoost;
+		const size_t m_HealthBoost;
 		bool m_IsActivated;
 };
 

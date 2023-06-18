@@ -16,10 +16,10 @@ class StopwatchManager final
 		void Update(float elapsedSec);
 
 		Stopwatch* CreateStopwatch(const float maxSec);
+		bool DeleteStopwatch(Stopwatch* pStopwatch);
 
 	private:
-		std::vector<Stopwatch*> m_pStopwatches;
-		
+		std::vector<Stopwatch*> m_pStopwatches;	
 };
 
 

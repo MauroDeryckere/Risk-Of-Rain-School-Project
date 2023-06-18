@@ -10,7 +10,7 @@ class LaunchPad final:
 	public LevelObject
 {
 	public:
-		LaunchPad(const Rectf& shape, const float yVelocity, TimeObjectManager* pTimeObjectManager, TextureManager* pTextureManager);
+		LaunchPad(const Rectf& shape, float yVelocity, TimeObjectManager* pTimeObjectManager, TextureManager* pTextureManager);
 		virtual ~LaunchPad() override;
 
 		LaunchPad(const LaunchPad&) = delete;
@@ -24,17 +24,16 @@ class LaunchPad final:
 	private:
 		//Not owned by LaunchPad
 		TimeObjectManager* m_pTimeObjectManager;
-		//---
+		//--------------------
 
 		StopwatchManager* m_pLaunchPadStopwatchManager;
 
 		const Vector2f m_VelocityBoost;
 
 		Stopwatch* m_pLaunchPadStopwatch;
-		unsigned int m_CurrentLaunchPadFrame;
-		const unsigned int m_LaunchPadFrames;
+		size_t m_CurrentLaunchPadFrame;
+		const size_t m_LaunchPadFrames;
 
 		void ChangeLaunchPadFrame();
 		void Interact(Player* pPlayer) const;
 };
-

@@ -15,6 +15,8 @@
 #include "TimeObjectManager.h"
 
 #include "LevelManager.h"
+#include "PowerUpManager.h"
+
 #include "Timer.h"
 #include "SoundStream.h"
 
@@ -25,21 +27,23 @@ Game::Game(const Window& window)
 	m_GameState{ GameState::startScreen },
 	m_PreviousGameState{ m_GameState },
 
+	m_WonGame{ false },
+
 	m_MousePos{ },
 
 	m_pTextureManager{ new TextureManager{ } },
 	m_pSoundManager{ new SoundManager{ } },
 	m_pTimeObjectManager{ new TimeObjectManager{ } },
 
-	m_pLevelManager{ new LevelManager{ } },
+	m_pPowerUpManager{ new PowerUpManager{ } },
+	m_pLevelManager{ new LevelManager{this, m_pPowerUpManager, m_pTimeObjectManager, m_pSoundManager, m_pTextureManager} },
 
 	m_pGameTimer{ m_pTimeObjectManager->CreateTimer() },
 	m_pTitleScreenMusic{ m_pSoundManager->CreateSoundStream("titleScreen", "Sounds/SoundStreams/musicTitle.ogg") },
 
-	m_pCurrentLevel{ nullptr },
 	m_pPlayer{ nullptr },
 	m_pCamera{ new Camera{ GetViewPort().width ,GetViewPort().height} },
-	m_pHud{ new Hud{ GetViewPort().width ,GetViewPort().height, m_pGameTimer, m_pSoundManager, m_pTextureManager } },
+	m_pHud{ new Hud{ GetViewPort().width ,GetViewPort().height, m_pGameTimer, m_pTextureManager } },
 	m_pUI{ new UI{ GetViewPort().width ,GetViewPort().height, m_pSoundManager, m_pTextureManager } }
 {
 	Initialize();
@@ -67,6 +71,7 @@ void Game::Cleanup( )
 	m_pTimeObjectManager->DeleteTimer(m_pGameTimer);
 
 	delete m_pLevelManager;
+	delete m_pPowerUpManager;
 	delete m_pTextureManager;
 	delete m_pSoundManager;
 	delete m_pTimeObjectManager;
@@ -91,7 +96,7 @@ void Game::Update(float elapsedSec )
 	case Game::GameState::playing:
 		m_pTimeObjectManager->Update(elapsedSec);
 		m_pLevelManager->Update(elapsedSec, m_pPlayer, pInput);
-		m_pPlayer->Update(elapsedSec, m_pCurrentLevel, pInput);
+		m_pPlayer->Update(elapsedSec, m_pLevelManager->GetCurrentLevel(), this, pInput);
 		break;
 	}
 }
@@ -113,48 +118,43 @@ void Game::Draw( ) const
 		break;
 
 	case Game::GameState::playing:
-		glPushMatrix();
-			m_pCamera->Transform(m_pPlayer->GetShape());
-				m_pLevelManager->Draw(m_pCamera->GetPosition());
-				m_pPlayer->Draw();
-		glPopMatrix();
-		m_pHud->Draw(m_pPlayer);
+		DrawGameplay();
 		break;
 
 	case Game::GameState::paused:
 		if (m_PreviousGameState != GameState::startScreen)
 		{
-			glPushMatrix();
-				m_pCamera->Transform(m_pPlayer->GetShape());
-					m_pLevelManager->Draw(m_pCamera->GetPosition());
-					m_pPlayer->Draw();
-			glPopMatrix();
-			m_pHud->Draw(m_pPlayer);
+			DrawGameplay();
 		}
 		m_pUI->DrawPausedScreen();
 		m_pUI->DrawMouseCursor(m_MousePos);
 		break;
 
 	case Game::GameState::audio:
-		if (m_PreviousGameState != GameState::startScreen)
+		if (m_PreviousGameState == GameState::playing)
 		{
-			glPushMatrix();
-				m_pCamera->Transform(m_pPlayer->GetShape());
-					m_pLevelManager->Draw(m_pCamera->GetPosition());
-					m_pPlayer->Draw();
-			glPopMatrix();
-			m_pHud->Draw(m_pPlayer);
+			DrawGameplay();
 		}
 		m_pUI->DrawAudioScreen();
 		m_pUI->DrawMouseCursor(m_MousePos);
 		break;
 
 	case Game::GameState::endScreen:
-		m_pUI->DrawEndScreen();
+		DrawGameplay();
+		m_pUI->DrawEndScreen(m_WonGame);
 		m_pUI->DrawMouseCursor(m_MousePos);
 		break;
 	}
+}
 
+void Game::EndGame(bool wonGame)
+{
+	m_WonGame = wonGame;
+
+	m_PreviousGameState = m_GameState;
+	m_GameState = GameState::endScreen;
+
+	m_pUI->InitializeEndScreenTextures();
 }
 
 void Game::ProcessKeyDownEvent( const SDL_KeyboardEvent & e )
@@ -184,6 +184,7 @@ void Game::ProcessMouseDownEvent( const SDL_MouseButtonEvent& e )
 void Game::ProcessMouseUpEvent( const SDL_MouseButtonEvent& e )
 {
 	const Point2f mousePos{ float(e.x), float(e.y) };
+
 	switch (m_GameState)
 	{
 	case Game::GameState::startScreen:
@@ -232,34 +233,34 @@ void Game::PrintInputKeys() const
 	std::cout << "Piercing Attack (Full Metal Jacket) X Key \n";
 	std::cout << "Roll Ability: C Key \n";
 
-	std::cout << "Open Chest: E Key \n";
+	std::cout << "Open Chest / Enter 'Teleporter': E Key \n";
 	std::cout << "Collect PowerUp: R Key \n";
 
 	std::cout << "Pause Game: Escape \n";
 
+	std::cout << "Teleport back to spawn position: P \n";
+
+	std::cout << "Goal: Get to the teleporter \n";
+
 	std::cout << std::endl;
 }
+
+void Game::DrawGameplay() const
+{
+	glPushMatrix();
+		m_pCamera->Transform(m_pPlayer->GetShape());
+		m_pLevelManager->Draw(m_pCamera->GetPosition());
+			m_pPlayer->Draw();
+	glPopMatrix();
+	m_pHud->Draw(m_pPlayer);
+}
+
 
 void Game::HandleStartScreenState(const Point2f& mousePos)
 {
 	if (m_pUI->IsButtonPressed(UI::StartScreenButton::StartSinglePlayer, mousePos))
 	{
-		m_PreviousGameState = m_GameState;
-		m_GameState = GameState::playing;
-
-		m_pTitleScreenMusic->Stop();
-
-		m_pLevelManager->InitializeStage1(m_pTextureManager, m_pSoundManager, m_pTimeObjectManager);
-		m_pCurrentLevel = m_pLevelManager->GetCurrentLevel();
-
-		m_pPlayer = new Player{ Point2f{500.f,500.f}, m_pTextureManager, m_pSoundManager, m_pTimeObjectManager };
-
-		m_pGameTimer->Start();
-
-		m_pCamera->SetLevelBoundaries(m_pCurrentLevel->GetBoundaries());
-
-		m_pUI->FreeStartScreenResources();
-		m_pUI->FreeMonsterLogResources();
+		InitializeAtStage1();
 	}
 
 	else if (m_pUI->IsButtonPressed(UI::StartScreenButton::ComingSoon, mousePos) ||
@@ -313,19 +314,7 @@ void Game::HandlePausedState(const Point2f& mousePos)
 	}
 	else if (m_pUI->IsButtonPressed(UI::PausedButton::ReturnToMainMenu, mousePos))
 	{
-		m_pUI->InitializeStartScreenTextures();
-		m_pUI->InitializeMonsterLogScreenTextures();
-
-		m_pLevelManager->DeleteCurrentLevel();
-		m_pCurrentLevel = nullptr;
-
-		delete m_pPlayer;
-		m_pPlayer = nullptr;
-
-		m_pGameTimer->Reset();
-
-		m_PreviousGameState = GameState::startScreen;
-		m_GameState = GameState::startScreen;
+		ResetGameToMainMenu();
 	}
 }
 
@@ -347,4 +336,50 @@ void Game::HandleAudioState(const Point2f& mousePos)
 
 void Game::HandleEndScreenState(const Point2f& mousePos)
 {
+	if (m_pUI->IsButtonPressed(UI::EndScreenButton::BackToMainMenu, mousePos))
+	{
+		ResetGameToMainMenu();
+	}
+	else if (m_pUI->IsButtonPressed(UI::EndScreenButton::Quit, mousePos))
+	{
+		SDL_Quit();
+	}
+}
+
+void Game::InitializeAtStage1()
+{
+	m_PreviousGameState = m_GameState;
+	m_GameState = GameState::playing;
+
+	m_pTitleScreenMusic->Stop();
+
+	m_pLevelManager->InitializeStage1(m_pTextureManager, m_pSoundManager, m_pTimeObjectManager);
+
+	
+	m_pPlayer = new Player{ m_pLevelManager->GetSpawnPosition(), m_pTextureManager, m_pSoundManager, m_pTimeObjectManager };
+
+	m_pGameTimer->Start();
+
+	m_pCamera->SetLevelBoundaries(m_pLevelManager->GetLevelBoundaries());
+
+	m_pUI->FreeStartScreenResources();
+	m_pUI->FreeMonsterLogResources();
+}
+
+void Game::ResetGameToMainMenu()
+{
+	m_pUI->FreeEndScreenResources();
+
+	m_pUI->InitializeStartScreenTextures();
+	m_pUI->InitializeMonsterLogScreenTextures();
+
+	m_pLevelManager->DeleteCurrentLevel();
+
+	delete m_pPlayer;
+	m_pPlayer = nullptr;
+
+	m_pGameTimer->Reset();
+
+	m_PreviousGameState = GameState::startScreen;
+	m_GameState = GameState::startScreen;
 }

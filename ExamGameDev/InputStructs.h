@@ -6,7 +6,7 @@ struct RopeInput final
 {
 	RopeInput() = default;
 
-	friend std::istream& operator>>(std::istream& inputString, RopeInput& ropeData) //Need to overload the operator for each input struct
+	friend std::istream& operator>>(std::istream& inputString, RopeInput& ropeData) 
 	{
 		inputString >> ropeData.shape.left
 					>> ropeData.shape.bottom
@@ -22,7 +22,7 @@ struct LaunchPadInput final
 {
 	LaunchPadInput() = default;
 
-	friend std::istream& operator>>(std::istream& inputString, LaunchPadInput& launchPadData) //Need to overload the operator for each input struct
+	friend std::istream& operator>>(std::istream& inputString, LaunchPadInput& launchPadData) 
 	{
 		inputString >> launchPadData.shape.left
 					>> launchPadData.shape.bottom
@@ -40,7 +40,7 @@ struct ChestInput final
 {
 	ChestInput() = default;
 
-	friend std::istream& operator>>(std::istream& inputString, ChestInput& chestData) //Need to overload the operator for each input struct
+	friend std::istream& operator>>(std::istream& inputString, ChestInput& chestData)
 	{
 		inputString >> chestData.bottomLeft.x
 					>> chestData.bottomLeft.y
@@ -49,14 +49,30 @@ struct ChestInput final
 	}
 
 	Point2f bottomLeft;
-	unsigned int rarity;
+	size_t rarity;
+};
+
+struct TeleporterInput final
+{
+	TeleporterInput() = default;
+
+	friend std::istream& operator>>(std::istream& inputString, TeleporterInput& teleporterData) 
+	{
+		inputString >> teleporterData.shape.left
+					>> teleporterData.shape.bottom
+					>> teleporterData.shape.width
+					>> teleporterData.shape.height;
+		return inputString;
+	}
+
+	Rectf shape;
 };
 
 struct EnemySpawnAreaInput final
 {
 	EnemySpawnAreaInput() = default;
 
-	friend std::istream& operator>>(std::istream& inputString, EnemySpawnAreaInput& enemySpawnData) //Need to overload the operator for each input struct
+	friend std::istream& operator>>(std::istream& inputString, EnemySpawnAreaInput& enemySpawnData) 
 	{
 		inputString >> enemySpawnData.rangePoint0.x
 					>> enemySpawnData.rangePoint0.y

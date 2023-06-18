@@ -43,9 +43,6 @@
     <ClCompile Include="pch.cpp">
       <Filter>Game</Filter>
     </ClCompile>
-    <ClCompile Include="PowerUpGenerator.cpp">
-      <Filter>PowerUps</Filter>
-    </ClCompile>
     <ClCompile Include="MovementSpeedBoostPowerUp.cpp">
       <Filter>PowerUps</Filter>
     </ClCompile>
@@ -82,9 +79,6 @@
     <ClCompile Include="Stopwatch.cpp">
       <Filter>TimeObjects</Filter>
     </ClCompile>
-    <ClCompile Include="LevelHitBullet.cpp">
-      <Filter>Level</Filter>
-    </ClCompile>
     <ClCompile Include="TimeObjectManager.cpp">
       <Filter>Managers</Filter>
     </ClCompile>
@@ -94,17 +88,20 @@
     <ClCompile Include="LevelManager.cpp">
       <Filter>Managers</Filter>
     </ClCompile>
-    <ClCompile Include="Lemurian.cpp">
-      <Filter>Enemies</Filter>
-    </ClCompile>
     <ClCompile Include="Suicider.cpp">
       <Filter>Enemies</Filter>
     </ClCompile>
     <ClCompile Include="UI.cpp">
       <Filter>Game</Filter>
     </ClCompile>
-    <ClCompile Include="EnemySpawner.cpp">
+    <ClCompile Include="PowerUpManager.cpp">
       <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerUpGenerator.cpp">
+      <Filter>PowerUps</Filter>
+    </ClCompile>
+    <ClCompile Include="EnemySpawner.cpp">
+      <Filter>Enemies</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -150,9 +147,6 @@
     <ClInclude Include="Player.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PowerUpGenerator.h">
-      <Filter>PowerUps</Filter>
-    </ClInclude>
     <ClInclude Include="MovementSpeedBoostPowerUp.h">
       <Filter>PowerUps</Filter>
     </ClInclude>
@@ -192,9 +186,6 @@
     <ClInclude Include="Stopwatch.h">
       <Filter>TimeObjects</Filter>
     </ClInclude>
-    <ClInclude Include="LevelHitBullet.h">
-      <Filter>Level</Filter>
-    </ClInclude>
     <ClInclude Include="TimeObjectManager.h">
       <Filter>Managers</Filter>
     </ClInclude>
@@ -204,25 +195,25 @@
     <ClInclude Include="LevelManager.h">
       <Filter>Managers</Filter>
     </ClInclude>
-    <ClInclude Include="Lemurian.h">
-      <Filter>Enemies</Filter>
-    </ClInclude>
     <ClInclude Include="Suicider.h">
       <Filter>Enemies</Filter>
     </ClInclude>
     <ClInclude Include="UI.h">
       <Filter>Game</Filter>
     </ClInclude>
-    <ClInclude Include="EnemySpawner.h">
+    <ClInclude Include="PowerUpManager.h">
       <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerUpGenerator.h">
+      <Filter>PowerUps</Filter>
+    </ClInclude>
+    <ClInclude Include="EnemySpawner.h">
+      <Filter>Enemies</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Managers">
       <UniqueIdentifier>{d035ad46-179b-400a-b964-0caf925cc1dd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Enemies">
-      <UniqueIdentifier>{cfed1235-d06d-4575-9e11-95ede166e2e4}</UniqueIdentifier>
     </Filter>
     <Filter Include="LevelObjects">
       <UniqueIdentifier>{12e4a16f-8238-4e85-8f95-49312333411f}</UniqueIdentifier>
@@ -244,6 +235,9 @@
     </Filter>
     <Filter Include="TimeObjects">
       <UniqueIdentifier>{c7dadb5a-86aa-44a6-85c1-b49ebefc2b00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Enemies">
+      <UniqueIdentifier>{cfed1235-d06d-4575-9e11-95ede166e2e4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

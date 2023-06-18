@@ -1,9 +1,9 @@
 #pragma once
 #include "BaseEnemy.h"
+
 class TimeObjectManager;
 class StopwatchManager;
 class Stopwatch;
-
 
 class Texture;
 class SoundManager;
@@ -14,7 +14,7 @@ class Parent final:
     public BaseEnemy
 {
 	public:
-	    explicit Parent(const Point2f& position, float movementSpeed, float jumpSpeed, unsigned int health, unsigned int attackDamage, 
+	    Parent(const Point2f& position, float movementSpeed, float jumpSpeed, size_t health, size_t attackDamage,
 			TimeObjectManager* pTimeObjectManager, SoundManager* pSoundManager, TextureManager* pTextureManager);
 
 	    virtual ~Parent() override;
@@ -26,39 +26,37 @@ class Parent final:
 
 		virtual void Update(float elapsedSec, Level* pLevel, Player* pPlayer) override;
 		virtual void Draw() const override;
-		virtual void TakeDamage(unsigned int attackDamage) override;
+		virtual void TakeDamage(Player* pPlayer, size_t attackDamage) override;
 
 	private:
 		enum class ParentState 
 		{
 			spawning,
 			idle,
-			jumping,
 			walking,
 			attacking,
 			dying
 		};
 
 		ParentState m_ParentState;
-		ParentState m_PreviousParentState;
 
 		const Texture* m_pTexture;
 
 		Stopwatch* m_pSpawnStopwatch;
-		unsigned int m_CurrentSpawnFrame;
-		const unsigned int m_SpawnFrames;
+		size_t m_CurrentSpawnFrame;
+		const size_t m_SpawnFrames;
 
 		Stopwatch* m_pWalkStopwatch;
-		unsigned int m_CurrentWalkFrame;
-		const unsigned int m_WalkFrames;
+		size_t m_CurrentWalkFrame;
+		const size_t m_WalkFrames;
 
 		Stopwatch* m_pAttackStopwatch;
-		unsigned int m_CurrentAttackFrame;
-		const unsigned int m_AttackFrames;
+		size_t m_CurrentAttackFrame;
+		const size_t m_AttackFrames;
 
 		Stopwatch* m_pDyingStopwatch;
-		unsigned int m_CurrentDyingFrame;
-		const unsigned int m_DyingFrames;
+		size_t m_CurrentDyingFrame;
+		const size_t m_DyingFrames;
 
 		Stopwatch* m_pDeSpawnStopwatch;
 
@@ -68,20 +66,20 @@ class Parent final:
 		SoundEffect* m_pAttackSoundEffect;
 		SoundEffect* m_pHitSoundEffect;
 
-		const Rectf ChangeSourceRect() const;
-		void ChangeShape();
+		const Rectf& ChangeSourceRect() const;
+		void UpdateShape();
 
-		void ChangeEnemyState(Player* pPlayer);
-		void HandleEnemyBehavior(Player* pPlayer, float elapsedSec);
+		void UpdateEnemyState(Player* pPlayer);
+		void UpdateEnemyBehavior(Player* pPlayer, float elapsedSec);
 		void Attack(Player* pPlayer);
-		void Move(float elapsedSec);
+		void HandleMovement(float elapsedSec);
 
-		void ChangeAnimationFrame();
+		void UpdateAnimationFrame();
 		void ResetAnimationStopwatches();
 
-		void ChangeSpawnAnimationFrame();
-		void ChangeWalkAnimationFrame();
-		void ChangeAttackAnimationFrame();
-		void ChangeDyingAnimationFrame();
+		void UpdateSpawnAnimationFrame();
+		void UpdateWalkAnimationFrame();
+		void UpdateAttackAnimationFrame();
+		void UpdateDyingAnimationFrame();
 };
 

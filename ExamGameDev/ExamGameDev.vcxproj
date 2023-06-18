@@ -158,8 +158,6 @@ xcopy "$(SolutionDir)Resources\*.*" "$(TargetDir)" /y /d /s</Command>
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="HealthBoostPowerUp.cpp" />
     <ClCompile Include="Hud.cpp" />
-    <ClCompile Include="Lemurian.cpp" />
-    <ClCompile Include="LevelHitBullet.cpp" />
     <ClCompile Include="LevelManager.cpp" />
     <ClCompile Include="LevelObjectManager.cpp" />
     <ClCompile Include="MovementSpeedBoostPowerUp.cpp" />
@@ -172,6 +170,7 @@ xcopy "$(SolutionDir)Resources\*.*" "$(TargetDir)" /y /d /s</Command>
     <ClCompile Include="Parent.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="PowerUpManager.cpp" />
     <ClCompile Include="Rope.cpp" />
     <ClCompile Include="SoundManager.cpp" />
     <ClCompile Include="Stopwatch.cpp" />
@@ -193,8 +192,6 @@ xcopy "$(SolutionDir)Resources\*.*" "$(TargetDir)" /y /d /s</Command>
     <ClInclude Include="EnemyManager.h" />
     <ClInclude Include="EnemySpawner.h" />
     <ClInclude Include="Game.h" />
-    <ClInclude Include="Lemurian.h" />
-    <ClInclude Include="LevelHitBullet.h" />
     <ClInclude Include="LevelManager.h" />
     <ClInclude Include="LevelObjectManager.h" />
     <ClInclude Include="MovementSpeedBoostPowerUp.h" />
@@ -202,6 +199,7 @@ xcopy "$(SolutionDir)Resources\*.*" "$(TargetDir)" /y /d /s</Command>
     <ClInclude Include="PowerUpGenerator.h" />
     <ClInclude Include="PowerUpInventory.h" />
     <ClInclude Include="Parent.h" />
+    <ClInclude Include="PowerUpManager.h" />
     <ClInclude Include="SoundManager.h" />
     <ClInclude Include="StopwatchManager.h" />
     <ClInclude Include="Suicider.h" />

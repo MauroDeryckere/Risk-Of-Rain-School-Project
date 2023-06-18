@@ -7,10 +7,16 @@
 #include <iostream>
 #include <cassert>
 
-typedef std::map <std::string, std::pair<SoundStream*, unsigned int>>::iterator soundStreamMapIterator;
-typedef std::map <std::string, std::pair<SoundEffect*, unsigned int>>::iterator soundEffectMapIterator;
-typedef std::map <std::string, std::pair<SoundStream*, unsigned int>>::const_iterator soundStreamMapConstIterator;
-typedef std::map <std::string, std::pair<SoundEffect*, unsigned int>>::const_iterator soundEffectMapConstIterator;
+typedef std::map <std::string, std::pair<SoundStream*, size_t>>::iterator soundStreamMapIterator;
+typedef std::map <std::string, std::pair<SoundEffect*, size_t>>::iterator soundEffectMapIterator;
+typedef std::map <std::string, std::pair<SoundStream*, size_t>>::const_iterator soundStreamMapConstIterator;
+typedef std::map <std::string, std::pair<SoundEffect*, size_t>>::const_iterator soundEffectMapConstIterator;
+
+SoundManager::SoundManager() :
+	m_CurrentMusicVolPercent{ 100 },
+	m_CurrentGameVolPercent {100}
+{
+}
 
 SoundManager::~SoundManager()
 {
@@ -118,60 +124,52 @@ bool SoundManager::ResumeAll()
 bool SoundManager::AdjustMusicSound()
 {
 	constexpr size_t maxVol{ 128 };
-	constexpr size_t tenPercentJump{ 13 };
 
-	const size_t currentVolume{ size_t(SoundStream::GetVolume()) };
-
-	size_t newVol{};
-
-	if (currentVolume == maxVol)
+	if (m_CurrentMusicVolPercent == 100)
 	{
-		newVol = 0;
+		m_CurrentMusicVolPercent = 0;
 	}
-
 	else
 	{
-		newVol = currentVolume + tenPercentJump;
-
-		if (newVol > maxVol)
-		{
-			newVol = maxVol;
-		}
+		m_CurrentMusicVolPercent += 10;
 	}
 
+	size_t newVol{ (m_CurrentMusicVolPercent == 0 ? 0 : std::min(maxVol, maxVol / 100 * m_CurrentMusicVolPercent)) };
+
 	SoundStream::SetVolume(newVol);
+
 	return true;
 }
 
 bool SoundManager::AdjustGameSound()
 {
-	const soundEffectMapIterator startIt{ m_SoundEffectMap.begin() };
-
 	constexpr size_t maxVol{ 128 };
-	constexpr size_t tenPercentJump{ 13 };
 
-	const size_t currentVolume{ size_t(startIt->second.first->GetVolume()) };
-
-	size_t newVol{};
-
-	if (currentVolume == maxVol)
+	if (m_CurrentGameVolPercent == 100)
 	{
-		newVol = 0;
+		m_CurrentGameVolPercent = 0;
 	}
-
 	else
 	{
-		newVol = currentVolume + tenPercentJump;
-
-		if (newVol > maxVol)
-		{
-			newVol = maxVol;
-		}
+		m_CurrentGameVolPercent += 10;
 	}
 
-	for (soundEffectMapIterator it{ startIt }; it != m_SoundEffectMap.end(); ++it)
+	size_t newVol{ (m_CurrentGameVolPercent == 0 ? 0 : std::min(maxVol, maxVol / 100 * m_CurrentGameVolPercent)) };
+
+	for (soundEffectMapIterator it{ m_SoundEffectMap.begin() }; it != m_SoundEffectMap.end(); ++it)
 	{
 		it->second.first->SetVolume(newVol);
 	}
+
 	return true;
+}
+
+size_t SoundManager::GetMusicVolumePercent() const
+{
+	return m_CurrentMusicVolPercent;
+}
+
+size_t SoundManager::GetGameVolumePercent() const
+{
+	return m_CurrentGameVolPercent;
 }

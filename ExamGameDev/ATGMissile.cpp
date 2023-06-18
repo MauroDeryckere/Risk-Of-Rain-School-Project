@@ -5,9 +5,12 @@
 #include "BaseEnemy.h"
 
 #include "utils.h"
+#include "Player.h"
 #include "Level.h"
 
-ATGMissile::ATGMissile(const Point2f& spawnPosition, TextureManager* pTextureManager, BaseEnemy* pTarget, unsigned int damage) :
+#include <iostream>
+
+ATGMissile::ATGMissile(const Point2f& spawnPosition, TextureManager* pTextureManager, BaseEnemy* pTarget, size_t damage) :
 	m_pTextureManager{ pTextureManager },
 	m_pTexture{ m_pTextureManager->CreateTexture("PowerUps/ATGMissile.png", "ATGMissile") },
 	m_Shape{ Rectf{spawnPosition.x, spawnPosition.y, 11.f/3*2 , 24.f /3*2} },
@@ -31,9 +34,9 @@ ATGMissile::~ATGMissile()
 	m_pTextureManager->DeleteTexture("ATGMissile");
 }
 
-void ATGMissile::Update(Level* pLevel, float elapsedSec)
+void ATGMissile::Update(Player* pPlayer, Level* pLevel, float elapsedSec)
 {
-	const Rectf targetShape{ m_pTarget->GetShape() };
+	const Rectf& targetShape{ m_pTarget->GetShape() };
 
 	m_t += elapsedSec;
 
@@ -49,7 +52,7 @@ void ATGMissile::Update(Level* pLevel, float elapsedSec)
 		m_pTarget = pLevel->GetClosestByEnemy(m_Shape);
 		if (!m_pTarget)
 		{
-			pLevel->DeSpawnATGMissile(this);
+			pLevel->DestroyATGMissile(this);
 			return;
 		}
 
@@ -65,8 +68,8 @@ void ATGMissile::Update(Level* pLevel, float elapsedSec)
 
 		if (m_MissileState == MissileState::despawn)
 		{
-			m_pTarget->TakeDamage(m_Damage);
-			pLevel->DeSpawnATGMissile(this);
+			m_pTarget->TakeDamage(pPlayer, m_Damage);
+			pLevel->DestroyATGMissile(this);
 			return;
 		}
 	}
@@ -90,6 +93,11 @@ void ATGMissile::Draw() const
 
 void ATGMissile::InitializeBezierPoints()
 {
+	if (!m_pTarget)
+	{
+		std::cerr << "no target" << std::endl;
+	}
+
 	const Rectf targetShape{ m_pTarget->GetShape() };
 
 	const Point2f centerTarget{ targetShape.left + targetShape.width / 2, 

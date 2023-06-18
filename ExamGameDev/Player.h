@@ -13,12 +13,12 @@ class BasePowerUp;
 class Stopwatch;
 class Rope;
 class SoundEffect;
-class SoundStream;
+class Game;
 
 class Player final
 {
     public:
-        explicit Player(const Point2f& playerPosition, TextureManager* pTextureManager, SoundManager* pSoundManager, TimeObjectManager* pTimeObjectManager);
+        Player(const Point2f& playerPosition, TextureManager* pTextureManager, SoundManager* pSoundManager, TimeObjectManager* pTimeObjectManager);
 		~Player();
 
         Player(const Player&) = delete;
@@ -27,26 +27,34 @@ class Player final
         Player& operator=(Player&&) = delete;
 
         void Draw() const;
-        void DrawInventory(float windowWidth, float windowheight) const;
-        void DrawHealth(float windowWidth, float windowHeight) const;
-        void DrawAbilities(float windowWidth, float windowHeight) const;
 
-		void Update(float elapsedSec, Level* pLevel, const Uint8* pInput);
+        //HUD
+        void DrawInventory(float windowWidth, float windowheight) const;
+        void DrawPlayerStatsHud(float windowWidth, float windowHeight) const;
+
+		void Update(float elapsedSec, Level* pLevel, Game* pGame, const Uint8* pInput);
         const Rectf& GetShape() const;
+
+        size_t GetBalance() const;
+        void UpdateBalance(int balChange);
 
         bool CanFireATG() const;
 
 		//Movement and interaction (with the level)
         void ClimbRope(const Rope* pRope);
         void StopClimbing();
-        void UseLaunchPad(const Vector2f& velocity);
+        bool IsClimbing() const;
+        void UseLaunchPad(const Point2f& bottomCenter, const Vector2f& velocity);
 
-        void TakeDamage(unsigned int attackDamage);
+        bool IsOnGround() const;
+
+        //-1 attackDamage == set hp to 1
+        void TakeDamage(int attackDamage);
 
 		//Powerups
         void CollectPowerUp(BasePowerUp* pPowerUp);
 
-        void IncreaseMaxHealth(unsigned int healthBoost);
+        void IncreaseMaxHealth(size_t healthBoost);
         void IncreaseMovementSpeed(float movementSpeedBoost);
 
     private:
@@ -54,7 +62,7 @@ class Player final
         TextureManager* m_pTextureManager;
         SoundManager* m_pSoundManager;
         TimeObjectManager* m_pTimeObjectManager;
-        //
+        //------------------
 
         StopwatchManager* m_pPlayerStopwatchManager;
 
@@ -80,39 +88,44 @@ class Player final
         Vector2f m_Velocity;
         const Vector2f m_Acceleration;
 
-        unsigned int m_MaxHealth;
-        unsigned int m_CurrentHealth;
-        unsigned int m_AttackRange;
-        unsigned int m_AttackDamage;
+        Point2f m_LastPosOnGround;
+        Point2f m_LastPosOnRope;
+        bool m_IsOnGround;
+
+        size_t m_MaxHealth;
+        size_t m_CurrentHealth;
+        size_t m_AttackRange;
+        size_t m_AttackDamage;
 
         bool m_IsInvulnerable;
         bool m_CanFireATG;
 
         PowerUpInventory* m_pInventory;
+        size_t m_Balance;
 
-        unsigned int m_JumpCounter;
-        unsigned int m_MaxJumps;
+        size_t m_JumpCounter;
+        size_t m_MaxJumps;
 
         PlayerState m_PlayerState;
         PlayerState m_PreviousPlayerState;
 
-        unsigned int m_CurrentWalkFrame;
-        const unsigned int m_WalkFrames;
+        size_t m_CurrentWalkFrame;
+        const size_t m_WalkFrames;
 
-        unsigned int m_CurrentClimbFrame;
-        const unsigned int m_ClimbFrames;
+        size_t m_CurrentClimbFrame;
+        const size_t m_ClimbFrames;
 
-        unsigned int m_CurrentRollFrame;
-        const unsigned int m_RollFrames;
+        size_t m_CurrentRollFrame;
+        const size_t m_RollFrames;
 
-        unsigned int m_CurrentDoubleTapFrame;
-        const unsigned int m_DoubleTapFrames; 
+        size_t m_CurrentDoubleTapFrame;
+        const size_t m_DoubleTapFrames;
 
-        unsigned int m_CurrentFullMetalJacketFrame;
-        const unsigned int m_FulllMetalJacketFrames;
+        size_t m_CurrentFullMetalJacketFrame;
+        const size_t m_FulllMetalJacketFrames;
 	
-        unsigned int m_CurrentDeathFrame;
-        const unsigned int m_DeathFrames;
+        size_t m_CurrentDeathFrame;
+        const size_t m_DeathFrames;
 
         Stopwatch* m_pWalkStopwatch;
         Stopwatch* m_pClimbStopwatch;
@@ -132,30 +145,41 @@ class Player final
         SoundEffect* m_pAttackBulletSound;
         SoundEffect* m_pCollectPowerUp;
 
+        bool m_WonGame;
+
+        const Texture* m_pHudTexture;
+        bool m_WasClimbing;
+
         //Helper functions
         void InitializeStopwatches();
         void DeleteStopwatches();
-        void InitializeSounds();
-        void DeleteSounds();
+        void InitializeSoundEffects();
+        void DeleteSoundEffects();
     
+        void HandleFallDamage();
         void HandleHealthRegen();
 
-        void ChangePlayerState(const Level* pLevel, const Uint8* pInput);
+        void UpdatePlayerState(const Level* pLevel, const Uint8* pInput);
+        void UpdatePlayerStateAfterAttackAbility(bool isJumpInput, bool isWalkInput, bool isRollInput);
 
         void HandleMovementKeyboardInput(const Uint8* pInput);
         void HandleMovement(float elapsedSec);
         void HandleAttackStates(Level* pLevel);
 
-        void StartStopwatches();
-        void HandleStopwatches(float elapsedSec);
+        void HandleStopwatches(Game* pGame, float elapsedSec);
+        void StartStopwatches(Game* pGame);
         void ResetCooldownStopwatches(float elapsedSec);
 
         void ResetAnimationStopwatches();
 
-        void ChangeCharacterShape();
-        const Rectf ChangeCharacterSourceRect() const;
+        void ChangePlayerShape();
+        const Rectf& ChangePlayerSourceRect() const;
 
         void DrawPlayer() const;
         void DrawBullet() const;
+
+        //HUD
+        void DrawAbilities(float windowWidth, float windowHeight, float hudTextureScale, const Rectf& hudTextureDstrect) const;
+        void DrawHealth(float windowWidth, float windowHeight, float hudTextureScale, const Rectf& hudTextureDstrect) const;
 };
 

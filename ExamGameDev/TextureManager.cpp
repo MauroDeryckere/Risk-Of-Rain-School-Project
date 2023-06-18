@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cassert>
 
-typedef std::map <std::string, std::pair<const Texture*, unsigned int>>::iterator textureMapIterator;
+typedef std::map <std::string, std::pair<const Texture*, size_t>>::iterator textureMapIterator;
 
 TextureManager::TextureManager()
 {
@@ -65,15 +65,16 @@ const Texture* TextureManager::CreateTexture(const std::string& text, const std:
 	return it->second.first;
 }
 
-bool TextureManager::InitializeDigitAndSymbolArr()
+void TextureManager::InitializeDigitAndSymbolArr()
 {
-	return CreateDigitAndSymbolArr("the-bomb-sound.regular.ttf", 20, Color4f{1.f,1.f,1.f,1.f});
+	CreateDigitAndSymbolArr("the-bomb-sound.regular.ttf", 20, Color4f{ 1.f,1.f,1.f,1.f });
+	CreateDigitAndSymbolArr("the-bomb-sound.regular.ttf", 20, Color4f{0.f,1.f,0.f,1.f});
 }
 
-bool TextureManager::CreateDigitAndSymbolArr(const std::string& filePath, const int fontSize, const Color4f& color)
+void TextureManager::CreateDigitAndSymbolArr(const std::string& filePath, const int fontSize, const Color4f& color)
 {
 	std::vector<const Texture*> textureArr;
-	textureArr.reserve(15);
+	textureArr.reserve(16);
 
 	for (size_t digit {0}; digit <= 9; ++digit)
 	{
@@ -85,6 +86,7 @@ bool TextureManager::CreateDigitAndSymbolArr(const std::string& filePath, const 
 	textureArr.emplace_back(new Texture{"-", filePath, fontSize, color });
 	textureArr.emplace_back(new Texture{":", filePath, fontSize, color });
 	textureArr.emplace_back(new Texture{"%", filePath, fontSize, color });
+	textureArr.emplace_back(new Texture{"$", filePath, fontSize, color });
 
 	m_pDigitAndSymbolTextures.emplace_back(textureArr);
 
@@ -92,8 +94,6 @@ bool TextureManager::CreateDigitAndSymbolArr(const std::string& filePath, const 
 	{
 		assert(m_pDigitAndSymbolTextures.back()[index]->IsCreationOk());
 	}
-
-	return true;
 }
 
 bool TextureManager::DeleteTexture(const std::string& key)

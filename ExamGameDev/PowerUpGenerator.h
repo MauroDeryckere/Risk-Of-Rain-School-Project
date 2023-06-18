@@ -7,11 +7,11 @@ class TextureManager;
 class PowerUpGenerator final
 {
 	public:
-		static BasePowerUp* GeneratePowerUp(Chest::Rarity chestRarity, const Point2f& position, TextureManager* pTextureManager);
+		BasePowerUp* GeneratePowerUp(Chest::Rarity chestRarity, const Rectf& shape, TextureManager* pTextureManager);
 
 	private:
-		static BasePowerUp* GenerateCommonPowerUp(const Point2f& position, TextureManager* pTextureManager);
-		static BasePowerUp* GenerateRarePowerUp(const Point2f& position, TextureManager* pTextureManager);
-		static BasePowerUp* GenerateLegendaryPowerUp(const Point2f& position, TextureManager* pTextureManager);
+		BasePowerUp* GenerateCommonPowerUp(const Rectf& shape, TextureManager* pTextureManager);
+		BasePowerUp* GenerateRarePowerUp(const Rectf& shape, TextureManager* pTextureManager);
+		BasePowerUp* GenerateLegendaryPowerUp(const Rectf& shape, TextureManager* pTextureManager);
 };
 

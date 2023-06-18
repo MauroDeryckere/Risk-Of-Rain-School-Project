@@ -24,6 +24,8 @@ class LevelObject
 		const Texture* m_pTexture;
 
 	private:
+		//Not owned by Levelobject
 		TextureManager* m_pTextureManager;
+		//-------
 };
 

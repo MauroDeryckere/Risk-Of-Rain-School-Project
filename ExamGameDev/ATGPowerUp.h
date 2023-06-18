@@ -16,6 +16,6 @@ class ATGPowerUp final:
 		virtual void IncreasePowerUpAmount() override;
 
 	private:
-		unsigned int m_ActivationChance;
+		size_t m_ActivationChance;
 };
 

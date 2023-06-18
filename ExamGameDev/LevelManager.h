@@ -6,13 +6,15 @@ class SoundManager;
 class LevelObjectManager;
 class EnemyManager;
 class TimeObjectManager;
+class PowerUpManager;
+class Game;
 
 #include <vector>
 
-class LevelManager
+class LevelManager final
 {
 	public:
-		LevelManager();
+		LevelManager(Game* pGame, PowerUpManager* pPowerUpManager, TimeObjectManager* pTimeObjectManager, SoundManager* pSoundManager, TextureManager* pTextureManager);
 		~LevelManager();
 
 		LevelManager(const LevelManager&) = delete;
@@ -25,12 +27,20 @@ class LevelManager
 		void Draw(const Point2f& cameraPos) const;
 
 		bool InitializeStage1(TextureManager* pTextureManager, SoundManager* pSoundManager, TimeObjectManager* pTimeObjectManager);
-
+		
 		Level* GetCurrentLevel() const;
+		const Rectf& GetLevelBoundaries() const;
+		const Point2f& GetSpawnPosition() const;
 
 		bool DeleteCurrentLevel();
 
+		bool StartNextStage() const;
 	private:
+		//Not owned by LevelManager
+		Game* m_pGame;
+		PowerUpManager* m_pPowerUpManager;
+		//--------
+
 		LevelObjectManager* m_pLevelObjectManager;
 		EnemyManager* m_pEnemyManager;
 

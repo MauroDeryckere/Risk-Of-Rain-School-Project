@@ -2,6 +2,7 @@
 #include "Rope.h"
 
 #include "Player.h"
+#include <iostream>
 
 Rope::Rope(const Rectf& shape, TextureManager* pTextureManager):
 	LevelObject{ shape, pTextureManager },
@@ -14,19 +15,62 @@ void Rope::Update(float elapsedSec, Player* pPlayer, const Uint8* pInput)
 {
 	const bool wasOverlapping{ m_IsOverLapping };
 
-	m_IsOverLapping = utils::IsOverlapping(m_Shape, pPlayer->GetShape());
+	const Rectf& playerShape{ pPlayer->GetShape() };
+
+	m_IsOverLapping = utils::IsOverlapping(m_Shape, playerShape);
 
 	const bool isClimbInput{ pInput[SDL_SCANCODE_UP] ||
 							 pInput[SDL_SCANCODE_DOWN] };	
 
-	if (m_IsOverLapping && isClimbInput)
+	if (!pPlayer->IsClimbing())
 	{
-		Interact(pPlayer);
-	}
+		if (m_IsOverLapping && isClimbInput)
+		{
+			const Rectf bottomHalfPlayerShape{ playerShape.left, playerShape.bottom, playerShape.width, playerShape.height / 2 };
+			const Rectf topHalfRopeShape{ m_Shape.left, m_Shape.bottom + m_Shape.height / 2, m_Shape.width, m_Shape.height / 2 };
 
-	else if (wasOverlapping && isClimbInput) //Player was overlapping the previous frame but is no longer on this frame
+			const Rectf topHalfPlayerShape{ playerShape.left, playerShape.bottom + playerShape.height / 2, playerShape.width, playerShape.height / 2 };
+			const Rectf bottomHalfRopeShape{ m_Shape.left, m_Shape.bottom, m_Shape.width, m_Shape.height / 2 };
+
+			if (pPlayer->IsOnGround())
+			{
+				if (utils::IsOverlapping(bottomHalfPlayerShape, topHalfRopeShape) && pInput[SDL_SCANCODE_DOWN])
+				{
+					Interact(pPlayer);
+				}
+				else if (utils::IsOverlapping(topHalfPlayerShape, bottomHalfRopeShape) && pInput[SDL_SCANCODE_UP])
+				{
+					Interact(pPlayer);
+				}
+			}
+			else
+			{
+				Interact(pPlayer);
+			}
+		}
+	}
+	else
 	{
-		pPlayer->StopClimbing();
+		if (m_IsOverLapping)
+		{
+			//Stop climbing once player is on the ground
+			if (utils::IsOverlapping(playerShape, Rectf{m_Shape.left, m_Shape.bottom, m_Shape.width, playerShape.height}) && pInput[SDL_SCANCODE_DOWN])
+			{
+				if (pPlayer->IsOnGround())
+				{
+					pPlayer->StopClimbing();
+					return;
+				}
+			}
+			if (isClimbInput)
+			{
+				Interact(pPlayer);
+			}
+		}
+		else if (wasOverlapping && isClimbInput) //Player was overlapping the previous frame but is no longer on this frame
+		{
+			pPlayer->StopClimbing();
+		}
 	}
 }
 

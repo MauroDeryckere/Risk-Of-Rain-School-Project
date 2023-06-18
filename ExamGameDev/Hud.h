@@ -2,18 +2,14 @@
 
 class Texture;
 class Player;
-class SoundManager;
 class TextureManager;
 class Timer;
-class SoundEffect;
-
-#include <vector>
 
 class Hud final
 {
 	public:
-		Hud(float windowWidth, float windowHeight, const Timer* pGameTimer, SoundManager* pSoundManager, TextureManager* pTextureManager);
-		~Hud();
+		Hud(float windowWidth, float windowHeight, const Timer* pGameTimer, const TextureManager* pTextureManager);
+		~Hud() = default;
 
 		Hud(const Hud&) = delete;
 		Hud& operator=(const Hud&) = delete;
@@ -24,23 +20,14 @@ class Hud final
 		
 	private:
 		//Not owned by HUD
-		TextureManager* m_pTextureManager;
-		SoundManager* m_pSoundManager;
+		const TextureManager* m_pTextureManager;
 		const Timer* m_pGameTimer;
 		//--------------------------
 
 		const float m_WindowWidth;
 		const float m_WindowHeight;
 
-		void InitializeTextures();
-
-		void DrawBalance() const; //TODO
+		void DrawBalance(const Player* player) const;
 		void DrawTime() const;
-		void DrawDifficulty() const; //TODO
-
 		void DrawInventory(const Player* pPlayer) const;
-		void DrawAbilities(const Player* pPlayer) const;
-
-		void DrawHealth(const Player* pPlayer) const;
-		void DrawLevel() const; //TODO
 };

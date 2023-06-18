@@ -21,12 +21,6 @@ PowerUpInventory::PowerUpInventory(TextureManager* pTextureManager, size_t initS
 	{
 		m_pPowerUps.emplace_back(nullptr);
 	}
-
-	//tests
-	for (size_t i = 1; i <= 100; i++)
-	{
-		AddPowerUp(PowerUpGenerator::GeneratePowerUp(Chest::Rarity::rare, Point2f{ 0.f,0.f }, m_pTextureManager));
-	}
 }
 
 PowerUpInventory::~PowerUpInventory()
@@ -62,16 +56,20 @@ void PowerUpInventory::Draw(float windowWidth, float windowHeight) const
 
 	glPushMatrix();
 		glTranslatef(20.f, 20.f, 0.f);
-		for (size_t index{ 0 }; index < m_pPowerUps.size(); ++index)
+		for (size_t inventoryIndex{ 0 }; inventoryIndex < m_pPowerUps.size(); ++inventoryIndex)
 		{
-			if (m_pPowerUps[index] != nullptr)
+			if (m_pPowerUps[inventoryIndex] != nullptr)
 			{
+
 				glPushMatrix();
 					glTranslatef(drawnPowerUps * (powerUpShape.width + spaceBetwPowerUps) - spaceBetwPowerUps, 0, 0);
-						m_pPowerUps[index]->Draw();
+						utils::SetColor(0.f, 0.f, 0.f, .5f);
+						utils::FillRect(powerUpShape);
+
+						m_pPowerUps[inventoryIndex]->Draw();
 						m_pTextureManager->DrawNumber(TextureManager::NumberTextures::_20PxWhiteDigits, 
 													  Point2f{ powerUpShape.left + textOffset, powerUpShape.bottom + textOffset},
-													  m_pPowerUps[index]->GetPowerUpAmount(), 0.f);
+													  m_pPowerUps[inventoryIndex]->GetPowerUpAmount(), 0.f);
 				glPopMatrix();
 
 				++drawnPowerUps;
@@ -87,38 +85,38 @@ bool PowerUpInventory::AddPowerUp(BasePowerUp* pPowerUp)
 		return false;
 	}
 
-	const size_t index = pPowerUp->GetIndex();
+	const size_t inventoryIndex{ pPowerUp->GetIndex() };
 
-	if (m_pPowerUps.size() < index)
+	if (m_pPowerUps.size() < inventoryIndex)
 	{
-		while (m_pPowerUps.size() < index)
+		while (m_pPowerUps.size() < inventoryIndex)
 		{
 			m_pPowerUps.emplace_back(nullptr);
 		}
 	}
 
-	if (m_pPowerUps[index] == nullptr)
+	if (m_pPowerUps[inventoryIndex] == nullptr)
 	{
-		m_pPowerUps[index] = pPowerUp;
+		m_pPowerUps[inventoryIndex] = pPowerUp;
 	}
 	else 
 	{
 		delete pPowerUp;
 	}
 
-	m_pPowerUps[index]->IncreasePowerUpAmount();
-	m_pPowerUps[index]->SetBottomLeft(Point2f{ 0.f, 0.f });
+	m_pPowerUps[inventoryIndex]->IncreasePowerUpAmount();
+	m_pPowerUps[inventoryIndex]->SetBottomLeft(Point2f{ 0.f, 0.f });
 
 	return true;
 }
 
 void PowerUpInventory::ActivatePowerUps(Player* pPlayer, Level* pLevel) const
 {
-	for (size_t index{ 0 }; index < m_pPowerUps.size(); ++index)
+	for (size_t inventoryIndex{ 0 }; inventoryIndex < m_pPowerUps.size(); ++inventoryIndex)
 	{
-		if (m_pPowerUps[index] != nullptr)
+		if (m_pPowerUps[inventoryIndex] != nullptr) 
 		{
-			m_pPowerUps[index]->Activate(pPlayer, pLevel);
+			m_pPowerUps[inventoryIndex]->Activate(pPlayer, pLevel);
 		}
 	}
 }

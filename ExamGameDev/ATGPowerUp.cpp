@@ -14,16 +14,16 @@ ATGPowerUp::ATGPowerUp(const Point2f& position, const Texture* pTexture):
 
 void ATGPowerUp::Activate(Player* pPlayer, Level* pLevel)
 {
-	constexpr unsigned int attackDamage{ 25 };
+	constexpr size_t attackDamage{ 25 };
 
 	bool isTriggered{ false };
 
 	if (pPlayer->CanFireATG())
 	{
-		constexpr unsigned int max{ 100 };
-		constexpr unsigned int min{ 1 };
+		constexpr size_t min{ 1 };
+		constexpr size_t max{ 100 };
 
-		if ((rand() % (max - min + 1) + min) <= m_ActivationChance)
+		if (utils::GetRandomNumber(min, max) <= m_ActivationChance)
 		{
 			isTriggered = true;
 		}
@@ -31,7 +31,7 @@ void ATGPowerUp::Activate(Player* pPlayer, Level* pLevel)
 
 	if (isTriggered)
 	{
-		const Rectf playerShape{ pPlayer->GetShape() };
+		const Rectf& playerShape{ pPlayer->GetShape() };
 
 		if (pLevel->SpawnATGMissile(Point2f{ playerShape.left, playerShape.bottom + playerShape.height / 2 }, 25))
 		{

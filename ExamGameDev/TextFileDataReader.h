@@ -12,7 +12,7 @@ public:
     const std::vector<inputStruct> ReadTextFile();
 
 private:
-    std::string m_TextFileName;
+    const std::string m_TextFileName;
 };
 
 template<typename inputStruct>

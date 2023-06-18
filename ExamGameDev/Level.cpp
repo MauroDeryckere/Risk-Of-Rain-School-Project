@@ -17,27 +17,26 @@
 #include "SVGParser.h"
 #include "SoundStream.h"
 #include "SoundEffect.h"
-
+ 
 #include "TextureManager.h"
 #include "SoundManager.h"
 #include "LevelObjectManager.h"
 #include "EnemyManager.h"
 #include "TimeObjectManager.h"
 #include "StopwatchManager.h"
-
-#include "LevelHitBullet.h"
+#include "PowerUpManager.h"
 
 #include <iostream>
-#include <cassert>
-#include <algorithm>
 
+Level::Level(const Point2f& playerSpawnPos, PowerUpManager* pPowerUpManager, TextureManager* pTextureManager, SoundManager* pSoundManager, LevelObjectManager* pLevelObjectManager, EnemyManager* pEnemyManager, TimeObjectManager* pTimeObjectManager) :
+	m_PlayerSpawnPos {playerSpawnPos},
 
-Level::Level(TextureManager* pTextureManager, SoundManager* pSoundManager, LevelObjectManager* pLevelObjectManager, EnemyManager* pEnemyManager, TimeObjectManager* pTimeObjectManager) :
 	m_pTextureManager{ pTextureManager },
 	m_pSoundManager{ pSoundManager },
 	m_pLevelObjectManager{ pLevelObjectManager },
 	m_pEnemyManager{ pEnemyManager },
 	m_pTimeObjectManager{ pTimeObjectManager },
+	m_pPowerUpManager{ pPowerUpManager },
 
 	m_pForeGroundTexture{ m_pTextureManager->CreateTexture("Level/ForeGround.png", "levelForeGround") },
 	m_pStarsBackgroundTexture{ m_pTextureManager->CreateTexture("Level/StarsBackground.png", "levelStarsBackground") },
@@ -47,9 +46,6 @@ Level::Level(TextureManager* pTextureManager, SoundManager* pSoundManager, Level
 
 	m_Boundaries{ Rectf{ 0.f, 0.f, m_pForeGroundTexture->GetWidth(), m_pForeGroundTexture->GetHeight() } }
 {
-	m_pEnemyManager->SpawnParent(Point2f{ 180.f + 25.f + 25.f ,  2096 - 1727.f }, m_pTimeObjectManager, m_pSoundManager, m_pTextureManager); //temp, testing !!
-	//m_pEnemyManager->SpawnSuicider(Point2f{ 180.f + 25.f + 25.f ,  2096 - 1727 + 10.f }, m_pTimeObjectManager, m_pSoundManager, m_pTextureManager);
-
 	//SVG Map
 	SVGParser::GetVerticesFromSvgFile("Level/Risk_of_Rain_map_water_Background.svg", m_Vertices);
 
@@ -60,40 +56,21 @@ Level::Level(TextureManager* pTextureManager, SoundManager* pSoundManager, Level
 
 Level::~Level()
 {
-	m_pTextureManager->DeleteTexture("levelForeGround");
-	m_pTextureManager->DeleteTexture("levelStarsBackground");
-	m_pTextureManager->DeleteTexture("levelMountainsBackground1");
-	m_pTextureManager->DeleteTexture("levelMountainsBackground2");
-	m_pTextureManager->DeleteTexture("levelMoon");
-
+	DeleteTextures();
 	DeleteSounds();
-
-	//Delete the powerups still on the level
-	for (size_t index{ 0 }; index < m_pPowerUps.size(); ++index)
-	{
-		delete m_pPowerUps[index];
-	}
 
 	//Delete all ATGMissiles still on the level
 	for (size_t index{ 0 }; index < m_pATGMissiles.size(); ++index)
 	{
 		delete m_pATGMissiles[index];
 	}
-
-	//Delete hitbullet obj
-	for (size_t index{ 0 }; index < m_pLevelHitBullets.size(); ++index)
-	{
-		delete m_pLevelHitBullets[index];
-	}
 }
 
 void Level::Update(float elapsedSec, Player* pPlayer, const Uint8* pInput)
 {
-	UpdatePowerUps(pPlayer, pInput);
-
 	for (size_t index{ 0 }; index < m_pATGMissiles.size(); ++index)
 	{
-		m_pATGMissiles[index]->Update(this, elapsedSec);
+		m_pATGMissiles[index]->Update(pPlayer, this, elapsedSec);
 	}
 }
 
@@ -101,16 +78,8 @@ void Level::Draw(const Point2f& cameraPos) const
 {
 	DrawBackground(cameraPos);
 	DrawForeGround();
-
-	DrawPowerUps();
 	DrawATGMissiles();
-
-	for (size_t index{ 0 }; index < m_pLevelHitBullets.size(); ++index)
-	{
-		m_pLevelHitBullets[index]->Draw();
-	}
 }
-
 void Level::DrawBackground(const Point2f& cameraPos) const
 {
 	constexpr float xStarParFactor{ .95f };
@@ -151,14 +120,6 @@ void Level::DrawForeGround() const
 	m_pForeGroundTexture->Draw();
 }
 
-void Level::DrawPowerUps() const
-{
-	for (size_t index{ 0 }; index < m_pPowerUps.size(); ++index)
-	{
-		m_pPowerUps[index]->Draw();
-	}
-}
-
 void Level::DrawATGMissiles() const
 {
 	for (size_t index{ 0 }; index < m_pATGMissiles.size(); ++index)
@@ -167,7 +128,7 @@ void Level::DrawATGMissiles() const
 	}
 }
 
-void Level::HandleCollision(Rectf& characterShape, Vector2f& characterVelocity) const
+void Level::HandleCollision(Rectf& characterShape, Vector2f& characterVelocity, BaseEnemy* pEnemy, Player* pPlayer, const Point2f& lastPosOnGround) const
 {
 	HandleVerticalCollision(characterShape, characterVelocity);
 
@@ -176,18 +137,24 @@ void Level::HandleCollision(Rectf& characterShape, Vector2f& characterVelocity) 
 		HandleHorizontalCollision(characterShape, characterVelocity);
 	}
 
-	HandleOutOfBoundariesCollision(characterShape);
+	if (!pPlayer && !pEnemy) 
+	{
+		std::cerr << "both enemy and player are nullptr (handleCollision) \n";
+	}
+
+	HandleOutOfBoundariesCollision(characterShape, characterVelocity, pEnemy , pPlayer, lastPosOnGround);
 }
 bool Level::IsOnGround(const Rectf& characterShape) const
 {
 	constexpr float offset{ 1.f };
+	constexpr float verOffset{ 5.f };
 	constexpr float smallestPlatformWidth{ 32.f };
 
 	const float rayCastWidth{ characterShape.width / smallestPlatformWidth };
 
 	utils::HitInfo hitInfoGround{};
 		const Point2f leftSideOrigin1{ characterShape.left + offset, characterShape.bottom + characterShape.height / 2 };
-		const Point2f leftSideOrigin2{ characterShape.left + offset, characterShape.bottom - offset};
+		const Point2f leftSideOrigin2{ characterShape.left + offset, characterShape.bottom - verOffset};
 
 		const Point2f rightSideOrigin1{ characterShape.left + characterShape.width - offset, leftSideOrigin1.y };
 		const Point2f rightSideOrigin2{ characterShape.left + characterShape.width - offset, leftSideOrigin2.y };
@@ -210,7 +177,7 @@ bool Level::IsOnGround(const Rectf& characterShape) const
 				while (currentWidthToCheck <= characterShape.width)
 				{
 					const Point2f origin1{ characterShape.left + currentWidthToCheck, characterShape.bottom + characterShape.height / 2 };
-					const Point2f origin2{ characterShape.left + currentWidthToCheck, characterShape.bottom - offset };
+					const Point2f origin2{ characterShape.left + currentWidthToCheck, characterShape.bottom - verOffset };
 
 					if (Raycast(m_Vertices[index], origin1, origin2, hitInfoGround))
 					{
@@ -226,7 +193,7 @@ bool Level::IsOnGround(const Rectf& characterShape) const
 	return false;
 }
 
-bool Level::HandleBulletRayCast(const Rectf& characterShape, bool isFacingLeft, unsigned int attackRange, unsigned int attackDamage, unsigned int pierceAmount)
+bool Level::HandleBulletRayCast(Player* pPlayer, const Rectf& characterShape, bool isFacingLeft, size_t attackRange, size_t attackDamage, size_t pierceAmount)
 {
 	const std::vector<BaseEnemy*>& enemiesArr{ m_pEnemyManager->GetEnemiesArr() };
 
@@ -243,8 +210,8 @@ bool Level::HandleBulletRayCast(const Rectf& characterShape, bool isFacingLeft, 
 										rightCharacterSide + attackRange, 
 									  bulletOrigin.y };
 
-	std::vector<BaseEnemy*> hitEnemies;
-	std::vector<float> enemyDistances;
+	std::vector<BaseEnemy*> hitEnemies{};
+	std::vector<float> enemyDistances{};
 
 	for (size_t index{ 0 }; index < enemiesArr.size(); ++index)
 	{
@@ -302,15 +269,13 @@ bool Level::HandleBulletRayCast(const Rectf& characterShape, bool isFacingLeft, 
 			{
 				if (levelHitDistance < enemyDistances[closestEnemyIndex])
 				{
-					m_pLevelHitBullets.emplace_back(new LevelHitBullet{ levelHitIntersectPoint, isFacingLeft, m_pTextureManager });
-
-					std::cout << "Hit Level (distance)\n";
+					//std::cout << "Hit Level (distance)\n";
 					return hitEnemy;
 				}
 				else
 				{
 					std::cout << "Hit Enemy (distance)\n";
-					hitEnemies[closestEnemyIndex]->TakeDamage(attackDamage);
+					hitEnemies[closestEnemyIndex]->TakeDamage(pPlayer, attackDamage);
 
 					hitEnemies[closestEnemyIndex] = nullptr;
 					hitEnemies[closestEnemyIndex] = hitEnemies.back();
@@ -324,9 +289,7 @@ bool Level::HandleBulletRayCast(const Rectf& characterShape, bool isFacingLeft, 
 			}
 			else
 			{
-				m_pLevelHitBullets.emplace_back(new LevelHitBullet{ levelHitIntersectPoint, isFacingLeft, m_pTextureManager });
-
-				std::cout << "Level hit \n";
+				//std::cout << "Level hit \n";
 				return hitEnemy;
 			}
 		}
@@ -334,8 +297,8 @@ bool Level::HandleBulletRayCast(const Rectf& characterShape, bool isFacingLeft, 
 		{
 			if (!hitEnemies.empty())
 			{
-				std::cout << "Hit Enemy (no level hit)\n";
-				hitEnemies[closestEnemyIndex]->TakeDamage(attackDamage);
+				//std::cout << "Hit Enemy (no level hit)\n";
+				hitEnemies[closestEnemyIndex]->TakeDamage(pPlayer, attackDamage);
 
 				hitEnemies[closestEnemyIndex] = nullptr;
 				hitEnemies[closestEnemyIndex] = hitEnemies.back();
@@ -348,7 +311,7 @@ bool Level::HandleBulletRayCast(const Rectf& characterShape, bool isFacingLeft, 
 			}
 			else
 			{
-				std::cout << "Nothing hit \n";
+				//std::cout << "Nothing hit \n";
 				return hitEnemy;
 			}
 		}
@@ -359,7 +322,7 @@ bool Level::HandleBulletRayCast(const Rectf& characterShape, bool isFacingLeft, 
 
 void Level::DropPowerUp(BasePowerUp* pPowerUp)
 {
-	m_pPowerUps.emplace_back(pPowerUp);
+	m_pPowerUpManager->AddPowerUp(pPowerUp);
 }
 
 void Level::RemoveChest(LevelObject* pLevelObject)
@@ -377,7 +340,7 @@ bool Level::DeSpawnEnemy(BaseEnemy* pEnemy)
 	return m_pEnemyManager->DeleteEnemy(pEnemy);
 }
 
-bool Level::SpawnATGMissile(const Point2f& position, unsigned int attackDamage)
+bool Level::SpawnATGMissile(const Point2f& position, size_t attackDamage)
 {
 	BaseEnemy* pTarget{ m_pEnemyManager->GetClosestByEnemyPtr(Rectf{position.x, position.y, 10.f, 10.f}) };
 	if (!pTarget)
@@ -391,7 +354,7 @@ bool Level::SpawnATGMissile(const Point2f& position, unsigned int attackDamage)
 	return true;
 }
 
-void Level::DeSpawnATGMissile(ATGMissile* pMissile)
+void Level::DestroyATGMissile(ATGMissile* pMissile)
 {
 	for (size_t index = 0; index < m_pATGMissiles.size(); index++)
 	{
@@ -406,10 +369,24 @@ const Rectf& Level::GetBoundaries() const
 	return m_Boundaries;
 }
 
+const Point2f& Level::GetSpawnPosition() const
+{
+	return m_PlayerSpawnPos;
+}
+
 void Level::InitializeSounds()
 {
 	m_pSpawnMissileSound = m_pSoundManager->CreateSoundEffect("SpawnMissile", "Sounds/SoundEffects/wMissileLaunch.ogg");
 	m_pLevelMusic = m_pSoundManager->CreateSoundStream("LevelMusic", "Sounds/SoundStreams/musicStage10.ogg");
+}
+
+void Level::DeleteTextures()
+{
+	m_pTextureManager->DeleteTexture("levelForeGround");
+	m_pTextureManager->DeleteTexture("levelStarsBackground");
+	m_pTextureManager->DeleteTexture("levelMountainsBackground1");
+	m_pTextureManager->DeleteTexture("levelMountainsBackground2");
+	m_pTextureManager->DeleteTexture("levelMoon");
 }
 
 void Level::DeleteSounds()
@@ -418,25 +395,9 @@ void Level::DeleteSounds()
 	m_pSoundManager->DeleteSoundStream("LevelMusic");
 }
 
-void Level::UpdatePowerUps(Player* pPlayer, const Uint8* pInput)
-{
-	for (size_t index{ 0 }; index < m_pPowerUps.size(); ++index)
-	{
-		if (utils::IsOverlapping(pPlayer->GetShape(), m_pPowerUps[index]->GetShape()) && pInput[SDL_SCANCODE_R])
-		{
-			pPlayer->CollectPowerUp(m_pPowerUps[index]);
-
-			m_pPowerUps[index] = nullptr;
-			m_pPowerUps[index] = m_pPowerUps.back();
-			m_pPowerUps.pop_back();
-		}
-	}
-}
-
 void Level::HandleHorizontalCollision(Rectf& characterShape, Vector2f& characterVelocity) const
 {
 	constexpr float offset{ 1.f };
-
 	constexpr float smallestPlatformHeight{ 10.f };
 
 	utils::HitInfo hitInfoX{};
@@ -521,13 +482,14 @@ void Level::HandleVerticalCollision(Rectf& characterShape, Vector2f& characterVe
 	constexpr float smallestPlatformWidth{ 32.f };
 
 	constexpr float offset{ 1.f };
+	constexpr float verOffset{ 5.f };
 
 	const float rayCastWidth { characterShape.width / smallestPlatformWidth };
 
 	if (characterVelocity.y <= 0.f) //When falling
 	{
 		utils::HitInfo hitInfoY{};
-			const Point2f leftEdgeOrigin1{ characterShape.left + 2*offset, characterShape.bottom + 5.f * -characterVelocity.y / 100 };
+			const Point2f leftEdgeOrigin1{ characterShape.left + 2*offset, characterShape.bottom + verOffset * -characterVelocity.y / 100 };
 			const Point2f leftEdgeOrigin2{ characterShape.left + 2*offset, characterShape.bottom };
 
 			const Point2f rightEdgeOrigin1{ characterShape.left + characterShape.width - offset, leftEdgeOrigin1.y };
@@ -553,7 +515,7 @@ void Level::HandleVerticalCollision(Rectf& characterShape, Vector2f& characterVe
 
 					while (currentWidthToCheck <= characterShape.width)
 					{
-						const Point2f origin1{ characterShape.left + currentWidthToCheck, characterShape.bottom + 5.f * -characterVelocity.y / 100 };
+						const Point2f origin1{ characterShape.left + currentWidthToCheck, characterShape.bottom + verOffset * -characterVelocity.y / 100 };
 						const Point2f origin2{ characterShape.left + currentWidthToCheck, characterShape.bottom };
 
 						if (Raycast(m_Vertices[index], origin1, origin2, hitInfoY))
@@ -572,7 +534,7 @@ void Level::HandleVerticalCollision(Rectf& characterShape, Vector2f& characterVe
 	else //When jumping
 	{
 		utils::HitInfo hitInfoY{};
-			const Point2f leftEdgeOrigin1{ characterShape.left + offset, characterShape.bottom + characterShape.height - 5.f  }; 
+			const Point2f leftEdgeOrigin1{ characterShape.left + offset, characterShape.bottom + characterShape.height - verOffset };
 			const Point2f leftEdgeOrigin2{ characterShape.left + offset, characterShape.bottom + characterShape.height };
 
 			const Point2f rightEdgeOrigin1{ characterShape.left + characterShape.width - offset, leftEdgeOrigin1.y };
@@ -598,7 +560,7 @@ void Level::HandleVerticalCollision(Rectf& characterShape, Vector2f& characterVe
 
 					while (currentWidthToCheck <= characterShape.width)
 					{
-						const Point2f origin1{ characterShape.left + currentWidthToCheck, characterShape.bottom + characterShape.height - 5.f };
+						const Point2f origin1{ characterShape.left + currentWidthToCheck, characterShape.bottom + characterShape.height - verOffset };
 						const Point2f origin2{ origin1.x, characterShape.bottom + characterShape.height };
 
 						if (Raycast(m_Vertices[index], origin1, origin2, hitInfoY))
@@ -616,23 +578,29 @@ void Level::HandleVerticalCollision(Rectf& characterShape, Vector2f& characterVe
 	}
 }
 
-void Level::HandleOutOfBoundariesCollision(Rectf& characterShape) const
+void Level::HandleOutOfBoundariesCollision(Rectf& characterShape, Vector2f& characterVelocity, BaseEnemy* pEnemy, Player* pPlayer, const Point2f& lastPosOnGround) const
 {
-	if (characterShape.left + characterShape.width < m_Boundaries.left || characterShape.left > m_Boundaries.left + m_Boundaries.width)
+	if (characterShape.left + characterShape.width < m_Boundaries.left
+		|| characterShape.left > m_Boundaries.left + m_Boundaries.width
+		|| characterShape.bottom + characterShape.height < m_Boundaries.bottom
+		|| characterShape.bottom > m_Boundaries.bottom + m_Boundaries.height)
 	{
-		characterShape.left = 500.f;
-		characterShape.bottom = 500.f;
-	}
-	if (characterShape.bottom + characterShape.height < m_Boundaries.bottom)
-	{
-		characterShape.left = 500.f;
-		characterShape.bottom = 500.f;
-			return;
-	}
-	if (characterShape.bottom > m_Boundaries.bottom + m_Boundaries.height)
-	{
-		characterShape.left = 500.f;
-		characterShape.bottom = 500.f;
+		characterVelocity.y = 0.f;
+
+		if (lastPosOnGround.y != 0 && lastPosOnGround.x !=0)
+		{
+			constexpr float fallingOffset{ 15.f };
+
+			characterShape.left = lastPosOnGround.x;
+			characterShape.bottom = lastPosOnGround.y + fallingOffset;
+
+			pPlayer->TakeDamage(-1);
+		}
+		else
+		{
+			constexpr size_t MAXHP{ 10000 };
+			pEnemy->TakeDamage(pPlayer, MAXHP);
+		}
 	}
 }
 

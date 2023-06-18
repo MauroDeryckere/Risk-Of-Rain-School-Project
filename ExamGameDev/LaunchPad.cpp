@@ -10,7 +10,7 @@
 
 #include "Player.h"
 
-LaunchPad::LaunchPad(const Rectf& shape, const float yVelocity, TimeObjectManager* pTimeObjectManager, TextureManager* pTextureManager):
+LaunchPad::LaunchPad(const Rectf& shape, float yVelocity, TimeObjectManager* pTimeObjectManager, TextureManager* pTextureManager):
 	LevelObject{ shape, pTextureManager },
 	m_pTimeObjectManager{ pTimeObjectManager },
 	m_pLaunchPadStopwatchManager{ pTimeObjectManager->CreateStopwatchManager() },
@@ -29,7 +29,7 @@ LaunchPad::~LaunchPad()
 
 void LaunchPad::Draw() const
 {
-	const Rectf sourceRect = Rectf{ 4.f + m_CurrentLaunchPadFrame * m_Shape.width + m_CurrentLaunchPadFrame * 4.f,
+	const Rectf sourceRect {4.f + m_CurrentLaunchPadFrame * m_Shape.width + m_CurrentLaunchPadFrame * 4.f,
 								  63.f ,
 								  m_Shape.width,
 								  m_Shape.height };
@@ -57,5 +57,5 @@ void LaunchPad::ChangeLaunchPadFrame()
 
 void LaunchPad::Interact(Player* pPlayer) const
 {
-	pPlayer->UseLaunchPad(m_VelocityBoost);
+	pPlayer->UseLaunchPad(Point2f{m_Shape.left + m_Shape.width/2, m_Shape.bottom }, m_VelocityBoost);
 }

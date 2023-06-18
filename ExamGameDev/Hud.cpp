@@ -3,60 +3,51 @@
 
 #include "Player.h"
 #include "Texture.h"
-#include "SoundEffect.h"
-#include "SoundManager.h"
 #include "TextureManager.h"
 #include "Timer.h"
 #include "utils.h"
-#include <vector>
 #include <iostream>
 
 #define digTexture TextureManager::NumberTextures::_20PxWhiteDigits
 
 
-Hud::Hud(float windowWidth, float windowHeight, const Timer* pGameTimer, SoundManager* pSoundManager, TextureManager* pTextureManager) :
+Hud::Hud(float windowWidth, float windowHeight, const Timer* pGameTimer, const TextureManager* pTextureManager) :
 	m_pTextureManager{ pTextureManager },
-	m_pSoundManager{ pSoundManager },
 	m_pGameTimer{ pGameTimer },
 
 	m_WindowWidth{windowWidth},
 	m_WindowHeight{ windowHeight }
 
 {
-	InitializeTextures();
 }
 
-Hud::~Hud()
-{
-
-}
 
 void Hud::Draw(const Player* pPlayer) const
 {
-	DrawBalance();
+	DrawBalance(pPlayer);
 	DrawTime();
-	DrawDifficulty();
 	DrawInventory(pPlayer);
-	DrawAbilities(pPlayer);
-	DrawHealth(pPlayer);
-	DrawLevel();
+	pPlayer->DrawPlayerStatsHud(m_WindowWidth, m_WindowHeight);
 }
 
-void Hud::InitializeTextures()
-{
+void Hud::DrawBalance(const Player* pPLayer) const
+{	
+	const float scale{ m_WindowHeight / 720.f };
+
+	Point2f bottomLeft{ m_WindowWidth - 60.f * scale, m_WindowHeight - 60.f * scale };
 	
-}
+	float numWidth{};
 
-void Hud::DrawBalance() const
-{
-
+	m_pTextureManager->DrawNumber(digTexture, bottomLeft, pPLayer->GetBalance(), 0.f, numWidth);
+	bottomLeft.x += numWidth;
+	m_pTextureManager->DrawSymbol(digTexture, bottomLeft, TextureManager::Symbols::Dollar, 0.f);
 }
 
 void Hud::DrawTime() const
 {
-	//TODO: magic numbers
+	const float scale{ m_WindowHeight / 720.f };
 
-	Point2f bottomLeft{m_WindowWidth - 60.F, m_WindowHeight - 30.f};
+	Point2f bottomLeft{m_WindowWidth - 60.f * scale, m_WindowHeight - 30.f * scale };
 
 	float numWidth{};
 
@@ -114,36 +105,7 @@ void Hud::DrawTime() const
 	#undef digTexture
 }
 
-void Hud::DrawDifficulty() const
-{
-
-}
-
 void Hud::DrawInventory(const Player* pPlayer) const
 {
 	pPlayer->DrawInventory(m_WindowWidth, m_WindowHeight);
-}
-
-void Hud::DrawAbilities(const Player* pPlayer) const
-{
-	pPlayer->DrawAbilities(m_WindowWidth, m_WindowHeight);
-}
-
-void Hud::DrawHealth(const Player* pPlayer) const
-{
-	pPlayer->DrawHealth(m_WindowWidth, m_WindowHeight);
-}
-
-void Hud::DrawLevel() const
-{
-	constexpr float levelBarWidth{ 200.f };
-	constexpr float levelBarHeight{ 10.f };
-
-	//Experience
-	utils::SetColor(Color4f{ 0.f,0.f,1.f,1.f });
-	utils::FillRect(m_WindowWidth/2 - levelBarWidth/2, 20.f, levelBarWidth, levelBarHeight);
-
-	//Background
-	utils::SetColor(Color4f{ 0.f,0.f,0.f,.5f });
-	utils::FillRect(m_WindowWidth / 2 - levelBarWidth / 2, 20.f, levelBarWidth, levelBarHeight);
 }

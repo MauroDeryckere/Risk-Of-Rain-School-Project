@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Camera.h"
 
-Camera::Camera(const float width, const float height) :
+Camera::Camera(float width, float height) :
 	m_Width{ width },
 	m_Height{ height },
 	m_LevelBoundaries{ Rectf{0,0,width,height} }
@@ -31,13 +31,8 @@ const Point2f& Camera::GetPosition() const
 const Point2f& Camera::Track(const Rectf& target) const
 {
 	//TRACKS PLAYER RECT, center it around the player and then return the bottomleft position for that
-	Point2f bottomLeft{ };
-
-	bottomLeft.x = (target.left + target.width / 2);
-	bottomLeft.y = (target.bottom + target.height / 2);
-
-	bottomLeft.x -= m_Width / 2;
-	bottomLeft.y -= m_Height / 2;
+	const Point2f bottomLeft{ (target.left + target.width / 2) - m_Width / 2, 
+							  (target.bottom + target.height / 2) - m_Height / 2 };
 
 	return bottomLeft;
 }

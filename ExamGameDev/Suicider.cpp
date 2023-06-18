@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "Suicider.h"
 
-
 #include "TextureManager.h"
 #include "TimeObjectManager.h"
 #include "SoundManager.h"
@@ -13,20 +12,21 @@
 #include "Stopwatch.h"
 #include "SoundEffect.h"
 #include "utils.h"
+#include <iostream>
 
-Suicider::Suicider(const Point2f& position, float movementSpeed, unsigned int health, unsigned int attackDamage, 
-					TimeObjectManager* pTimeObjectManager, SoundManager* pSoundManager, TextureManager* pTextureManager) :
+Suicider::Suicider(const Point2f& position, float movementSpeed, size_t health, size_t attackDamage,
+	TimeObjectManager* pTimeObjectManager, SoundManager* pSoundManager, TextureManager* pTextureManager) :
 	BaseEnemy{
-		Rectf{ position.x, position.y, 52.f*0.5, 34.f*0.5 }, movementSpeed, 0, health, attackDamage,
+	Rectf{ position.x, position.y, 26.f, 17.f }, movementSpeed, 0, health, attackDamage,
 		pTimeObjectManager, pSoundManager, pTextureManager
 	},
 
 	m_pSpawnStopwatch{ m_pEnemyStopwatchManager->CreateStopwatch(2.f) },
 
-	m_pWalkTexture{m_pTextureManager->CreateTexture("Enemies/120px-Risk_of_Rain_suicider.png","suiciderWalk")},
+	m_pWalkTexture{ m_pTextureManager->CreateTexture("Enemies/120px-Risk_of_Rain_suicider.png","suiciderWalk") },
 	m_pWalkStopwatch{ m_pEnemyStopwatchManager->CreateStopwatch(.15f) },
-	m_CurrentWalkFrame{0},
-	m_WalkFrames{4},
+	m_CurrentWalkFrame{ 0 },
+	m_WalkFrames{ 4 },
 
 	m_pAttackTexture{ m_pTextureManager->CreateTexture("Enemies/SuiciderAttack4pxMarhin.png", "suiciderAttack") },
 	m_CurrentAttackFrame{ 0 },
@@ -37,11 +37,11 @@ Suicider::Suicider(const Point2f& position, float movementSpeed, unsigned int he
 	m_PreviousSuiciderState{ m_SuiciderState },
 
 	m_pDeSpawnStopwatch{ m_pEnemyStopwatchManager->CreateStopwatch(5.f) },
+	m_pDieStopwatch{ m_pEnemyStopwatchManager->CreateStopwatch(5.f) },
 
 	m_pAttackSound{m_pSoundManager->CreateSoundEffect("suiciderExplosion", "Sounds/SoundEffects/wExplosiveShot.ogg") },
 	m_pHitSound{m_pSoundManager->CreateSoundEffect("suiciderHit", "Sounds/SoundEffects/wBoarHit.ogg") }
 {
-	//TODO: spawn sprite (PS)
 	m_pSpawnStopwatch->Start();
 }
 
@@ -56,17 +56,19 @@ Suicider::~Suicider()
 
 void Suicider::Update(float elapsedSec, Level* pLevel, Player* pPlayer)
 {
+	BaseEnemy::Update(elapsedSec, pLevel, pPlayer);
+
 	m_PreviousSuiciderState = m_SuiciderState;
 
-	ChangeEnemyState(pPlayer);
+	UpdateEnemyState(pPlayer);
 
 	if (m_SuiciderState != m_PreviousSuiciderState)
 	{
-		ChangeShape();
+		UpdateShape();
 	}
 
-	HandleEnemyBehavior(pPlayer, elapsedSec);
-	pLevel->HandleCollision(m_Shape, m_Velocity);
+	UpdateEnemyBehavior(pPlayer, elapsedSec);
+	pLevel->HandleCollision(m_Shape, m_Velocity, this, pPlayer);
 
 	UpdateAnimationFrame();
 
@@ -91,16 +93,22 @@ void Suicider::Draw() const
 	{
 		DrawSuicider();
 	}
+
+	BaseEnemy::DrawDroppedMoney();
 }
 
-void Suicider::TakeDamage(unsigned int attackDamage)
+void Suicider::TakeDamage(Player* pPlayer, size_t attackDamage)
 {
-	BaseEnemy::TakeDamage(attackDamage);
+	if (m_CurrentHealth == 0 || m_SuiciderState == SuiciderState::attacking)
+	{
+		return;
+	}
 
+	BaseEnemy::TakeDamage(pPlayer, attackDamage);
 	m_pHitSound->Play(0);
 }
 
-const Rectf Suicider::ChangeSourceRect() const
+const Rectf& Suicider::ChangeSourceRect() const
 {
 	constexpr float spaceBetweenAttackSprites{8.f};
 
@@ -138,7 +146,7 @@ const Rectf Suicider::ChangeSourceRect() const
 	return srcRect;
 }
 
-void Suicider::ChangeEnemyState(Player* pPlayer)
+void Suicider::UpdateEnemyState(Player* pPlayer)
 {
 	switch (m_SuiciderState)
 	{
@@ -147,11 +155,19 @@ void Suicider::ChangeEnemyState(Player* pPlayer)
 		{
 			m_SuiciderState = SuiciderState::walking;
 			m_pWalkStopwatch->Start();
+			m_pDieStopwatch->Start();
 		}
 		break;
 
 	case Suicider::SuiciderState::walking:
 		if (utils::IsOverlapping(m_Shape, pPlayer->GetShape()))
+		{
+			m_SuiciderState = SuiciderState::attacking;
+			m_pAttackStopwatch->Start();
+			m_CurrentHealth = 0;
+		}
+
+		if (m_pDieStopwatch->IsTimeReached())
 		{
 			m_SuiciderState = SuiciderState::attacking;
 			m_pAttackStopwatch->Start();
@@ -164,12 +180,12 @@ void Suicider::ChangeEnemyState(Player* pPlayer)
 	}
 }
 
-void Suicider::ChangeShape()
+void Suicider::UpdateShape()
 {
-	constexpr float walkWidth{ 52.f * 0.50 };
-	constexpr float walkHeight{ 34.f * 0.50 };
+	constexpr float walkWidth{ 26.f };
+	constexpr float walkHeight{ 17.f };
 
-	constexpr float attackSize{ 82.f * 1.3f * 0.50 };
+	constexpr float attackSize{ 53.f };
 
 	switch (m_SuiciderState)
 	{
@@ -190,27 +206,27 @@ void Suicider::ChangeShape()
 	}
 }
 
-void Suicider::HandleEnemyBehavior(Player* pPlayer, float elapsedSec)
+void Suicider::UpdateEnemyBehavior(Player* pPlayer, float elapsedSec)
 {
-	m_Velocity.x = 0.f;
-
 	switch (m_SuiciderState)
 	{
 	case Suicider::SuiciderState::spawning:
 		break;
 
 	case Suicider::SuiciderState::walking:
+		//Never stops moving until it explodes
 		if (m_Shape.left + m_Shape.width < pPlayer->GetShape().left)
 		{
 			m_Velocity.x = m_MovementSpeed;
 		}
-		else if (m_Shape.left > pPlayer->GetShape().left + pPlayer->GetShape().width)
+		if (m_Shape.left > pPlayer->GetShape().left + pPlayer->GetShape().width)
 		{
 			m_Velocity.x = -m_MovementSpeed;
 		}
 		break;
 
 	case Suicider::SuiciderState::attacking:
+		m_Velocity.x = 0;
 		Attack(pPlayer);
 		break;
 	}
@@ -263,6 +279,7 @@ void Suicider::HandleMovement(float elapsedSec)
 	}
 
 	m_Shape.left += m_Velocity.x * elapsedSec;
+	
 
 	m_Velocity.y += m_Acceleration.y * elapsedSec;
 	m_Shape.bottom += m_Velocity.y * elapsedSec;
@@ -274,7 +291,13 @@ void Suicider::Attack(Player* pPlayer)
 	{
 		if (!m_HasAttacked)
 		{
-			if (utils::IsOverlapping(m_Shape, pPlayer->GetShape()))
+			constexpr float blastRadius{ 25.f };
+
+			if (utils::IsOverlapping(Rectf{m_Shape.left - blastRadius/2, 
+										   m_Shape.bottom - blastRadius/2, 
+										   m_Shape.width + blastRadius, 
+										   m_Shape.height + blastRadius }
+									, pPlayer->GetShape()))
 			{
 				pPlayer->TakeDamage(m_AttackDamage);
 			}
@@ -289,7 +312,7 @@ void Suicider::Attack(Player* pPlayer)
 
 void Suicider::DrawSuicider() const
 {
-	const Rectf& srcRect{ ChangeSourceRect() };
+	const Rectf srcRect{ ChangeSourceRect() };
 
 	switch (m_SuiciderState)
 	{

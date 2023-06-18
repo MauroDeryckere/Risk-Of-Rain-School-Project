@@ -12,15 +12,14 @@
 #include "Stopwatch.h"
 #include "SoundEffect.h"
 
-#include <cassert>
 #include <iostream>
 
-Parent::Parent(const Point2f& position, float movementSpeed, float jumpSpeed, unsigned int health, unsigned int attackDamage, TimeObjectManager* pTimeObjectManager, SoundManager* pSoundManager, TextureManager* pTextureManager) :
+Parent::Parent(const Point2f& position, float movementSpeed, float jumpSpeed, size_t health, size_t attackDamage, TimeObjectManager* pTimeObjectManager, SoundManager* pSoundManager
+	, TextureManager* pTextureManager) :
 	BaseEnemy{ Rectf{position.x, position.y, 48.f , 67.f} , movementSpeed, jumpSpeed, health , attackDamage, 
-				pTimeObjectManager,  pSoundManager, pTextureManager },
+				pTimeObjectManager, pSoundManager, pTextureManager },
 
 	m_ParentState{ParentState::spawning},
-	m_PreviousParentState{ ParentState::spawning },
 
 	m_pTexture{ m_pTextureManager->CreateTexture("Enemies/Parent.png", "parentEnemy") },
 	m_pSpawnStopwatch{ m_pEnemyStopwatchManager->CreateStopwatch(.5f) },
@@ -44,7 +43,6 @@ Parent::Parent(const Point2f& position, float movementSpeed, float jumpSpeed, un
 {
 	m_pSpawnStopwatch->Start();
 
-
 	m_pDeathSoundEffect = m_pSoundManager->CreateSoundEffect("ParentDeath", "Sounds/SoundEffects/wChildDeath.ogg");
 	m_pAttackSoundEffect = m_pSoundManager->CreateSoundEffect("ParentAttack", "Sounds/SoundEffects/wChildGShoot1.ogg");
 	m_pHitSoundEffect = m_pSoundManager->CreateSoundEffect("ParentHit", "Sounds/SoundEffects/wChildHit.ogg");
@@ -61,26 +59,24 @@ Parent::~Parent()
 
 void Parent::Update(float elapsedSec, Level* pLevel, Player* pPlayer)
 {
-	m_PreviousParentState = m_ParentState;
+	BaseEnemy::Update(elapsedSec, pLevel, pPlayer);
 
 	const bool isOnGround{ pLevel->IsOnGround(m_Shape) };
 
-	ChangeEnemyState(pPlayer);
-	ChangeShape();
-	HandleEnemyBehavior(pPlayer, elapsedSec);
+	UpdateEnemyState(pPlayer);
+	UpdateShape();
+	UpdateEnemyBehavior(pPlayer, elapsedSec);
 
-	if (m_ParentState != ParentState::attacking)
-	{
-		pLevel->HandleCollision(m_Shape, m_Velocity);	
-	}
+	pLevel->HandleCollision(m_Shape, m_Velocity, this);
 
-	ChangeAnimationFrame();
+	UpdateAnimationFrame();
 
 	if (m_CurrentDyingFrame == m_DyingFrames - 1)
 	{
 		m_pDyingStopwatch->Reset();
 		m_pDeSpawnStopwatch->Start();
 	}
+
 	if (m_pDeSpawnStopwatch->IsTimeReached() )
 	{
 		pLevel->DeSpawnEnemy(this);
@@ -98,26 +94,31 @@ void Parent::Draw() const
 			glTranslatef(m_Shape.left + m_Shape.width / 2, 0, 0);
 			glScalef(-1, 1, 1);
 			glTranslatef(-(m_Shape.left + m_Shape.width / 2), 0, 0);
-			m_pTexture->Draw(m_Shape, sourceRect);
-			BaseEnemy::DrawHealthBar();
+				m_pTexture->Draw(m_Shape, sourceRect);
 		glPopMatrix();
 	}
-
 	else
 	{
 		m_pTexture->Draw(m_Shape, sourceRect);
-		BaseEnemy::DrawHealthBar();
 	}
+
+	BaseEnemy::DrawHealthBar();
+	BaseEnemy::DrawDroppedMoney();
 }
 
-void Parent::TakeDamage(unsigned int attackDamage)
+void Parent::TakeDamage(Player* pPlayer, size_t attackDamage)
 {
-	BaseEnemy::TakeDamage(attackDamage);
+	if (m_CurrentHealth == 0)
+	{
+		return;
+	}
+
+	BaseEnemy::TakeDamage(pPlayer, attackDamage);
 
 	m_pHitSoundEffect->Play(0);
 }
 
-const Rectf Parent::ChangeSourceRect() const
+const Rectf& Parent::ChangeSourceRect() const
 {
 	constexpr float spriteSheetOffset{ 1.f };
 
@@ -126,13 +127,10 @@ const Rectf Parent::ChangeSourceRect() const
 	switch (m_ParentState)
 	{
 	case ParentState::spawning:
-		sourceRect = Rectf{ spriteSheetOffset + m_CurrentSpawnFrame * (m_Shape.width + spriteSheetOffset) ,245.f, m_Shape.width, m_Shape.height };
+		sourceRect = Rectf{ spriteSheetOffset + m_CurrentSpawnFrame * (m_Shape.width + spriteSheetOffset), 245.f, m_Shape.width, m_Shape.height };
 		break;
 	case ParentState::idle:
 		sourceRect = Rectf{ spriteSheetOffset ,81.f, m_Shape.width, m_Shape.height };
-		break;
-	case ParentState::jumping:
-		sourceRect = Rectf{ spriteSheetOffset ,163.f, m_Shape.width, m_Shape.height };
 		break;
 	case ParentState::walking:
 		sourceRect = Rectf{ spriteSheetOffset + m_CurrentWalkFrame * (m_Shape.width + spriteSheetOffset),326.f, m_Shape.width, m_Shape.height };
@@ -148,9 +146,8 @@ const Rectf Parent::ChangeSourceRect() const
 	return sourceRect;
 }
 
-void Parent::ChangeShape()
+void Parent::UpdateShape()
 {
-
 	if (m_ParentState == ParentState::attacking)
 	{
 		m_Shape.width = 79.f;
@@ -168,7 +165,7 @@ void Parent::ChangeShape()
 	}
 }
 
-void Parent::ChangeEnemyState(Player* pPlayer)
+void Parent::UpdateEnemyState(Player* pPlayer)
 {
 	if (m_CurrentHealth == 0 || m_ParentState == ParentState::dying)
 	{
@@ -177,10 +174,11 @@ void Parent::ChangeEnemyState(Player* pPlayer)
 	}
 
 	const Rectf& playerShape{ pPlayer->GetShape() };
-	constexpr float radius{ 200.f };
+
+	constexpr float targetRadius{ 200.f };
 
 	const bool isWithinTargetRange{ utils::GetDistance(Point2f{m_Shape.left + m_Shape.width / 2, m_Shape.bottom + m_Shape.height / 2},
-													   Point2f{playerShape.left + playerShape.width/2, playerShape.bottom + playerShape.height/2}) <= radius };
+													   Point2f{playerShape.left + playerShape.width/2, playerShape.bottom + playerShape.height/2}) <= targetRadius};
 
 	const bool isWithinAttackRange{ utils::IsOverlapping(pPlayer->GetShape(), m_Shape) };
 
@@ -197,9 +195,6 @@ void Parent::ChangeEnemyState(Player* pPlayer)
 		{
 			m_ParentState = ParentState::attacking;
 		}
-		break;
-
-	case ParentState::jumping: //TODO
 		break;
 
 	case ParentState::walking:
@@ -220,19 +215,15 @@ void Parent::ChangeEnemyState(Player* pPlayer)
 		}
 		break;
 	}
-
-
 }
 
-void Parent::HandleEnemyBehavior(Player* pPlayer, float elapsedSec)
+void Parent::UpdateEnemyBehavior(Player* pPlayer, float elapsedSec)
 {
+	m_Velocity.x = 0;
+
 	switch (m_ParentState)
 	{
 	case ParentState::idle:
-
-		break;
-
-	case ParentState::jumping:
 		break;
 
 	case ParentState::walking:
@@ -244,8 +235,6 @@ void Parent::HandleEnemyBehavior(Player* pPlayer, float elapsedSec)
 		{
 			m_Velocity.x = -m_MovementSpeed;
 		}
-
-		Move(elapsedSec);
 		break;
 
 	case ParentState::attacking:
@@ -256,10 +245,10 @@ void Parent::HandleEnemyBehavior(Player* pPlayer, float elapsedSec)
 		break;
 	}
 
-	//HandleMovement
+	HandleMovement(elapsedSec);
 }
 
-void Parent::ChangeAnimationFrame()
+void Parent::UpdateAnimationFrame()
 {
 	ResetAnimationStopwatches();
 
@@ -271,16 +260,16 @@ void Parent::ChangeAnimationFrame()
 	switch (m_ParentState)
 	{
 	case ParentState::spawning:
-		ChangeSpawnAnimationFrame();
+		UpdateSpawnAnimationFrame();
 		break;
 	case ParentState::walking:
-		ChangeWalkAnimationFrame();
+		UpdateWalkAnimationFrame();
 		break;
 	case ParentState::attacking:
-		ChangeAttackAnimationFrame();
+		UpdateAttackAnimationFrame();
 		break;
 	case ParentState::dying:
-		ChangeDyingAnimationFrame();
+		UpdateDyingAnimationFrame();
 		break;
 	default:
 		break;
@@ -305,7 +294,7 @@ void Parent::ResetAnimationStopwatches()
 	}
 }
 
-void Parent::ChangeSpawnAnimationFrame()
+void Parent::UpdateSpawnAnimationFrame()
 {
 	if (m_pSpawnStopwatch->IsTimeReached() && m_ParentState == ParentState::spawning)
 	{
@@ -319,7 +308,7 @@ void Parent::ChangeSpawnAnimationFrame()
 	}
 }
 
-void Parent::ChangeWalkAnimationFrame()
+void Parent::UpdateWalkAnimationFrame()
 {
 	m_pWalkStopwatch->Start();
 
@@ -329,7 +318,7 @@ void Parent::ChangeWalkAnimationFrame()
 	}
 }
 
-void Parent::ChangeAttackAnimationFrame()
+void Parent::UpdateAttackAnimationFrame()
 {
 	m_pAttackStopwatch->Start();
 
@@ -350,11 +339,10 @@ void Parent::ChangeAttackAnimationFrame()
 
 			m_CurrentAttackFrame = 0;
 		}
-
 	}
 }
 
-void Parent::ChangeDyingAnimationFrame() 
+void Parent::UpdateDyingAnimationFrame() 
 {
 	if (!m_pDeSpawnStopwatch->IsRunning())
 	{
@@ -391,7 +379,7 @@ void Parent::Attack(Player* pPlayer)
 	}
 }
 
-void Parent::Move(float elapsedSec)
+void Parent::HandleMovement(float elapsedSec)
 {
 	if (m_Velocity.x < 0.f)
 	{
